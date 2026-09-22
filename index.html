@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Musculoskeletal Challenge</title>
+<meta name="description" content="Educational game-show quiz on musculoskeletal anatomy — 20 questions, 3 lifelines." />
+<style>
+/* ============================================================
+   MUSCULOSKELETAL CHALLENGE — game show styling
+   Self-contained. No external fonts, images or scripts.
+   ============================================================ */
+
+:root{
+  --bg-0:#01040c;
+  --bg-1:#050e24;
+  --bg-2:#0a1c46;
+  --panel:rgba(9,20,48,.78);
+  --panel-solid:#08142f;
+  --stroke:rgba(120,170,255,.22);
+  --stroke-strong:rgba(140,190,255,.5);
+  --blue:#2f6bff;
+  --blue-bright:#4da6ff;
+  --cyan:#66e8ff;
+  --gold:#ffc23d;
+  --green:#12c96b;
+  --green-soft:rgba(18,201,107,.18);
+  --red:#ff3b4e;
+  --red-soft:rgba(255,59,78,.16);
+  --text:#eef5ff;
+  --muted:#8ea7cf;
+  --accent:#4da6ff;
+  --accent-2:#66e8ff;
+  --glow:rgba(77,166,255,.55);
+  --radius:18px;
+  --font:'Inter','Segoe UI Variable','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+}
+
+/* difficulty tiers — the room changes temperature every 5 questions */
+.tier-easy{     --accent:#19d47a; --accent-2:#7ef7b6; --glow:rgba(25,212,122,.45); }
+.tier-medium{   --accent:#ffd24a; --accent-2:#ffe89a; --glow:rgba(255,210,74,.45); }
+.tier-hard{     --accent:#ff9a3c; --accent-2:#ffc98a; --glow:rgba(255,154,60,.5); }
+.tier-extreme{  --accent:#ff4d6d; --accent-2:#ffc23d; --glow:rgba(255,77,109,.5); }
+.tier-intro{    --accent:#4da6ff; --accent-2:#66e8ff; --glow:rgba(77,166,255,.45); }
+.tier-win{      --accent:#ffc23d; --accent-2:#ffe89a; --glow:rgba(255,194,61,.45); }
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:var(--font);
+  background:var(--bg-0);
+  color:var(--text);
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:.01em;
+}
+button{font-family:inherit;color:inherit;}
+:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
+
+/* ---------- animated stage background ---------- */
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:
+  radial-gradient(120% 80% at 50% -10%, var(--bg-2) 0%, var(--bg-1) 42%, var(--bg-0) 100%);}
+.bg::after{
+  content:'';position:absolute;inset:-10%;
+  background:
+    radial-gradient(40% 30% at 12% 88%, var(--glow), transparent 70%),
+    radial-gradient(40% 30% at 88% 88%, var(--glow), transparent 70%);
+  opacity:.3;filter:blur(24px);transition:opacity .6s ease;
+}
+.beams{position:absolute;left:50%;top:-40vh;width:200vmax;height:200vmax;
+  transform:translateX(-50%);opacity:.13;
+  background:repeating-conic-gradient(from 0deg at 50% 50%,
+    var(--accent) 0deg 1.2deg, transparent 1.2deg 16deg);
+  -webkit-mask-image:radial-gradient(circle at 50% 50%, #000 0%, transparent 62%);
+          mask-image:radial-gradient(circle at 50% 50%, #000 0%, transparent 62%);
+  animation:spin 90s linear infinite;}
+@keyframes spin{to{transform:translateX(-50%) rotate(360deg);}}
+.grid-floor{position:absolute;left:0;right:0;bottom:0;height:42vh;opacity:.18;
+  background-image:linear-gradient(var(--stroke) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--stroke) 1px,transparent 1px);
+  background-size:70px 70px;
+  transform:perspective(420px) rotateX(64deg);transform-origin:bottom center;}
+.vignette{position:absolute;inset:0;background:radial-gradient(90% 70% at 50% 45%,transparent 40%,rgba(0,0,0,.72) 100%);}
+
+/* ---------- generic shell ---------- */
+.app{position:relative;z-index:1;height:100vh;height:100dvh;display:flex;flex-direction:column;
+  transition:padding-right .32s cubic-bezier(.3,1,.4,1);}
+body.pres-open .app{padding-right:min(430px,94vw);}
+@media (max-width:900px){body.pres-open .app{padding-right:0;}}
+.screen{flex:1;min-height:0;display:none;flex-direction:column;}
+.screen.active{display:flex;animation:fadeIn .45s ease both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+
+.kicker{font-size:clamp(.6rem,1.05vw,.9rem);letter-spacing:.42em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+
+/* ---------- START SCREEN ---------- */
+#screen-start{align-items:center;justify-content:center;text-align:center;padding:3vh 4vw;gap:clamp(10px,2vh,26px);}
+.start-badge{display:flex;align-items:center;gap:.7em;color:var(--muted);
+  font-size:clamp(.6rem,1vw,.85rem);letter-spacing:.4em;text-transform:uppercase;font-weight:700;
+  animation:dropIn .7s cubic-bezier(.2,1.2,.3,1) both;}
+.start-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 12px var(--red);animation:blink 1.6s infinite;}
+@keyframes blink{50%{opacity:.25;}}
+.title{margin:0;line-height:.92;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;}
+.title .l1{display:block;font-size:clamp(2.6rem,8.4vw,7.6rem);
+  background:linear-gradient(180deg,#ffffff 0%,#b9d7ff 55%,#4b86ff 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 30px rgba(77,166,255,.5));
+  animation:dropIn .8s cubic-bezier(.2,1.2,.3,1) both;}
+.title .l2{display:block;font-size:clamp(2.6rem,8.4vw,7.6rem);
+  background:linear-gradient(180deg,#fff3cf 0%,var(--gold) 50%,#a86a00 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 34px rgba(255,194,61,.45));
+  animation:dropIn .8s .12s cubic-bezier(.2,1.2,.3,1) both;}
+@keyframes dropIn{from{opacity:0;transform:translateY(-38px) scale(.94);filter:blur(8px);}to{opacity:1;transform:none;filter:none;}}
+.rule{width:min(720px,80vw);height:2px;border:0;margin:.4vh 0;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--accent-2),var(--accent),transparent);
+  box-shadow:0 0 22px var(--glow);animation:widen .9s .2s ease both;}
+@keyframes widen{from{transform:scaleX(0);opacity:0;}to{transform:none;opacity:1;}}
+.start-stats{display:flex;gap:clamp(18px,4vw,64px);flex-wrap:wrap;justify-content:center;
+  animation:fadeIn .7s .35s ease both;}
+.stat{display:flex;flex-direction:column;align-items:center;gap:.25em;}
+.stat b{font-size:clamp(1.6rem,4vw,3.2rem);font-weight:900;line-height:1;
+  background:linear-gradient(180deg,#fff,#8fc0ff);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.stat span{font-size:clamp(.58rem,1vw,.82rem);letter-spacing:.32em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+.btn-hero{
+  margin-top:1vh;border:0;cursor:pointer;border-radius:999px;
+  padding:clamp(.8rem,1.9vh,1.35rem) clamp(2rem,5vw,4.2rem);
+  font-size:clamp(1rem,2.2vw,1.8rem);font-weight:900;letter-spacing:.18em;text-transform:uppercase;
+  color:#01122e;background:linear-gradient(135deg,#ffffff,var(--accent-2) 40%,var(--accent) 100%);
+  box-shadow:0 14px 45px var(--glow),inset 0 2px 0 rgba(255,255,255,.7);
+  transition:transform .16s ease,box-shadow .16s ease;animation:pulseGlow 2.6s infinite;}
+.btn-hero:hover{transform:translateY(-3px) scale(1.03);}
+.btn-hero:active{transform:translateY(0) scale(.99);}
+@keyframes pulseGlow{0%,100%{box-shadow:0 14px 45px var(--glow),inset 0 2px 0 rgba(255,255,255,.7);}
+  50%{box-shadow:0 14px 70px var(--glow),0 0 0 10px rgba(77,166,255,.08),inset 0 2px 0 rgba(255,255,255,.7);}}
+.start-lifelines{display:flex;gap:clamp(12px,2.4vw,30px);flex-wrap:wrap;justify-content:center;margin-top:1.4vh;
+  animation:fadeIn .7s .5s ease both;}
+.ll-card{display:flex;flex-direction:column;align-items:center;gap:.45em;min-width:clamp(110px,13vw,170px);
+  padding:clamp(.7rem,1.6vh,1.1rem) clamp(.8rem,1.6vw,1.4rem);border-radius:16px;
+  background:var(--panel);border:1px solid var(--stroke);backdrop-filter:blur(8px);}
+.ll-card .ico{font-size:clamp(1.3rem,2.6vw,2.1rem);line-height:1;}
+.ll-card .nm{font-size:clamp(.6rem,1.05vw,.88rem);letter-spacing:.24em;text-transform:uppercase;font-weight:800;color:var(--muted);}
+.start-hint{color:var(--muted);font-size:clamp(.62rem,1.05vw,.86rem);letter-spacing:.1em;margin-top:.8vh;animation:fadeIn .7s .7s ease both;}
+.start-hint kbd{font-family:var(--font);}
+
+kbd{display:inline-block;padding:.12em .45em;border-radius:6px;background:rgba(255,255,255,.1);
+  border:1px solid var(--stroke);font-size:.9em;font-weight:800;}
+
+/* ---------- TOP BAR ---------- */
+.topbar{display:flex;align-items:center;flex-wrap:wrap;row-gap:8px;gap:clamp(10px,1.6vw,24px);
+  padding:clamp(8px,1.5vh,18px) clamp(14px,2.4vw,38px) 0;}
+.topbar .brand,.topbar .qcount,.topbar .tierchip{flex:none;}
+.brand{display:flex;flex-direction:column;line-height:1;}
+.brand b{font-size:clamp(.8rem,1.65vw,1.5rem);font-weight:900;letter-spacing:.1em;text-transform:uppercase;
+  background:linear-gradient(180deg,#fff,#8fc0ff);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.brand span{font-size:clamp(.5rem,.85vw,.72rem);letter-spacing:.36em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:.35em;}
+.topbar .spacer{flex:1;}
+.qcount{font-size:clamp(.85rem,1.9vw,1.7rem);font-weight:900;letter-spacing:.04em;white-space:nowrap;}
+.qcount small{color:var(--muted);font-size:.62em;font-weight:800;letter-spacing:.14em;}
+.tierchip{display:flex;align-items:center;gap:.5em;padding:.4em .95em;border-radius:999px;
+  font-size:clamp(.58rem,1.05vw,.9rem);font-weight:900;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap;
+  color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);box-shadow:0 0 22px -6px var(--glow);}
+.iconbtn{width:clamp(30px,3vw,44px);height:clamp(30px,3vw,44px);display:grid;place-items:center;cursor:pointer;
+  border-radius:12px;border:1px solid var(--stroke);background:var(--panel);
+  font-size:clamp(.8rem,1.3vw,1.1rem);transition:.15s ease;}
+.iconbtn:hover{border-color:var(--stroke-strong);background:rgba(30,60,120,.65);transform:translateY(-2px);}
+.iconbtn.on{border-color:var(--accent);color:var(--accent);}
+
+/* progress bar */
+.progress-wrap{padding:clamp(6px,1.1vh,12px) clamp(14px,2.4vw,38px) 0;}
+.progress{height:clamp(6px,.9vh,11px);border-radius:999px;background:rgba(255,255,255,.07);
+  border:1px solid var(--stroke);overflow:hidden;}
+.progress .fill{height:100%;width:0;border-radius:999px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  box-shadow:0 0 18px var(--glow);transition:width .6s cubic-bezier(.4,1.4,.4,1);}
+
+/* ---------- MAIN QUIZ AREA ---------- */
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;
+  padding:clamp(8px,1.6vh,22px) clamp(14px,2.4vw,38px);gap:clamp(8px,1.4vh,18px);}
+.qcard{position:relative;display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:clamp(.9rem,2.4vh,2rem) clamp(1rem,3vw,3rem);border-radius:var(--radius);
+  background:linear-gradient(180deg,rgba(12,26,60,.9),rgba(6,14,36,.9));
+  border:1px solid var(--stroke);box-shadow:0 18px 60px -30px #000, inset 0 1px 0 rgba(255,255,255,.07);}
+.qcard::before{content:'';position:absolute;inset:-1px;border-radius:var(--radius);padding:1px;
+  background:linear-gradient(120deg,transparent 20%,var(--accent) 50%,transparent 80%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;opacity:.55;pointer-events:none;}
+.qtext{margin:0;font-size:clamp(1.05rem,2.55vw,2.5rem);font-weight:800;line-height:1.22;max-width:44ch;
+  text-wrap:balance;text-shadow:0 2px 20px rgba(0,0,0,.6);}
+
+.answers{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;
+  gap:clamp(8px,1.4vw,20px);}
+.ans{position:relative;display:flex;align-items:center;gap:clamp(.6rem,1.3vw,1.3rem);text-align:left;cursor:pointer;
+  padding:clamp(.5rem,1.4vh,1.1rem) clamp(.8rem,1.7vw,1.6rem);
+  border-radius:14px;border:1px solid var(--stroke);
+  background:linear-gradient(180deg,rgba(14,32,72,.86),rgba(7,16,40,.9));
+  box-shadow:0 14px 36px -26px #000,inset 0 1px 0 rgba(255,255,255,.06);
+  transition:transform .14s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease,opacity .3s ease;
+  overflow:hidden;}
+.ans:hover:not(:disabled){transform:translateY(-3px);border-color:var(--stroke-strong);background:linear-gradient(180deg,rgba(22,48,102,.92),rgba(9,20,50,.94));}
+.ans .letter{flex:none;display:grid;place-items:center;width:clamp(1.8rem,3.4vw,3.3rem);height:clamp(1.8rem,3.4vw,3.3rem);
+  border-radius:12px;font-weight:900;font-size:clamp(.85rem,1.8vw,1.7rem);
+  color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);transition:.18s ease;}
+.ans .txt{font-size:clamp(.78rem,1.55vw,1.5rem);font-weight:700;line-height:1.25;}
+.ans:disabled{cursor:not-allowed;}
+.ans.dead{opacity:.16;filter:grayscale(1);pointer-events:none;animation:vanish .45s ease both;}
+@keyframes vanish{0%{opacity:1;transform:none;}40%{opacity:.9;transform:translateX(-6px);}100%{opacity:.16;transform:scale(.96);}}
+.ans.sel{border-color:var(--accent);background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 24%,rgba(10,24,60,.9)),rgba(8,18,46,.92));
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent),0 18px 50px -24px var(--glow);}
+.ans.sel .letter{color:#03101f;background:var(--accent);box-shadow:0 0 22px var(--glow);}
+.ans.suspense{animation:suspensePulse .5s ease-in-out infinite alternate;}
+@keyframes suspensePulse{from{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 40%,transparent);}
+  to{box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 22%,transparent),0 0 60px var(--glow);}}
+.ans.dim{opacity:.4;}
+.ans.correct{border-color:var(--green);background:linear-gradient(180deg,rgba(18,201,107,.32),rgba(6,44,26,.92));
+  box-shadow:0 0 0 3px rgba(18,201,107,.55),0 20px 60px -22px rgba(18,201,107,.8);animation:popIn .4s cubic-bezier(.2,1.5,.4,1) both;}
+.ans.correct .letter{color:#03210f;background:var(--green);border-color:var(--green);}
+.ans.wrong{border-color:var(--red);background:linear-gradient(180deg,rgba(255,59,78,.3),rgba(52,6,12,.92));
+  box-shadow:0 0 0 3px rgba(255,59,78,.5);animation:shake .4s ease both;}
+.ans.wrong .letter{color:#2b0308;background:var(--red);border-color:var(--red);}
+@keyframes popIn{from{transform:scale(.96);}50%{transform:scale(1.035);}to{transform:none;}}
+@keyframes shake{10%,90%{transform:translateX(-5px);}30%,70%{transform:translateX(7px);}50%{transform:translateX(-4px);}100%{transform:none;}}
+
+/* why + controls row */
+.underbar{display:flex;align-items:stretch;gap:clamp(8px,1.4vw,18px);min-height:clamp(52px,8.4vh,96px);}
+.why{flex:1;display:flex;align-items:center;gap:clamp(.6rem,1.3vw,1.2rem);opacity:0;transform:translateY(10px);
+  padding:clamp(.45rem,1.1vh,.95rem) clamp(.8rem,1.7vw,1.5rem);border-radius:14px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--green) 16%,transparent),rgba(8,18,44,.85));
+  border:1px solid rgba(18,201,107,.4);transition:opacity .4s ease,transform .4s ease;pointer-events:none;}
+.why.show{opacity:1;transform:none;}
+.why.miss{background:linear-gradient(90deg,rgba(255,59,78,.16),rgba(8,18,44,.85));border-color:rgba(255,59,78,.4);}
+.why b{flex:none;font-size:clamp(.6rem,1.15vw,.98rem);letter-spacing:.3em;text-transform:uppercase;color:var(--green);}
+.why.miss b{color:var(--red);}
+.why p{margin:0;font-size:clamp(.74rem,1.35vw,1.28rem);font-weight:600;line-height:1.3;color:#dce9ff;}
+
+.btn{cursor:pointer;border-radius:14px;border:1px solid var(--stroke-strong);white-space:nowrap;
+  padding:clamp(.5rem,1.2vh,1rem) clamp(1rem,2.2vw,2.2rem);
+  font-size:clamp(.7rem,1.3vw,1.15rem);font-weight:900;letter-spacing:.14em;text-transform:uppercase;
+  background:linear-gradient(180deg,rgba(24,52,110,.9),rgba(9,20,48,.92));
+  transition:transform .14s ease,box-shadow .16s ease,opacity .2s ease;}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 30px -16px var(--glow);}
+.btn:disabled{opacity:.32;cursor:not-allowed;}
+.btn.primary{color:#02122c;border:0;background:linear-gradient(135deg,#fff,var(--accent-2) 45%,var(--accent));
+  box-shadow:0 12px 36px -14px var(--glow);}
+.btn.gold{color:#2a1a00;border:0;background:linear-gradient(135deg,#fff0c9,var(--gold) 55%,#c98a00);}
+
+/* lifelines bar */
+.lifelines{display:flex;gap:clamp(8px,1.3vw,16px);align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+.ll{position:relative;display:flex;align-items:center;gap:.55em;cursor:pointer;
+  padding:clamp(.4rem,1vh,.8rem) clamp(.7rem,1.5vw,1.3rem);border-radius:999px;
+  border:1px solid var(--stroke-strong);background:linear-gradient(180deg,rgba(20,44,96,.9),rgba(8,18,44,.92));
+  font-weight:900;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(.58rem,1.05vw,.92rem);
+  transition:transform .14s ease,box-shadow .16s ease,opacity .25s ease;}
+.ll .ic{font-size:1.25em;}
+.ll:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 0 26px -8px var(--glow);border-color:var(--accent);}
+.ll.used{opacity:.42;cursor:not-allowed;text-decoration:line-through;border-color:rgba(255,59,78,.45);}
+.ll.used::after{content:'USED';position:absolute;right:.5em;top:-.7em;font-size:.6em;letter-spacing:.14em;
+  color:var(--red);background:#1b0409;border:1px solid var(--red);border-radius:6px;padding:.1em .35em;text-decoration:none;}
+.ll.spend{animation:spendFlash .5s ease;}
+@keyframes spendFlash{0%{box-shadow:0 0 0 0 var(--accent);}60%{box-shadow:0 0 0 14px transparent;}}
+
+/* question rail */
+.rail{display:flex;gap:clamp(3px,.5vw,8px);align-items:center;justify-content:center;flex-wrap:nowrap;
+  padding:0 clamp(14px,2.4vw,38px) clamp(8px,1.4vh,18px);}
+.pip{flex:1 1 0;min-width:0;max-width:clamp(30px,3.6vw,62px);height:clamp(20px,3vh,34px);display:grid;place-items:center;
+  border-radius:9px;font-size:clamp(.52rem,1vw,.85rem);font-weight:900;color:var(--muted);
+  background:rgba(255,255,255,.045);border:1px solid var(--stroke);cursor:pointer;
+  transition:.18s ease;}
+.pip[data-tier="easy"]{border-bottom:2px solid rgba(25,212,122,.55);}
+.pip[data-tier="medium"]{border-bottom:2px solid rgba(255,210,74,.55);}
+.pip[data-tier="hard"]{border-bottom:2px solid rgba(255,154,60,.6);}
+.pip[data-tier="extreme"]{border-bottom:2px solid rgba(255,77,109,.65);}
+.pip.hit{background:rgba(18,201,107,.22);border-color:var(--green);color:#b6ffd7;}
+.pip.miss{background:rgba(255,59,78,.2);border-color:var(--red);color:#ffc6cc;}
+.pip.now{color:#02122c;background:linear-gradient(135deg,#fff,var(--accent));border-color:var(--accent);
+  transform:scale(1.18);box-shadow:0 0 22px var(--glow);}
+
+/* ---------- MODALS ---------- */
+.modal{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+  background:rgba(1,4,12,.86);backdrop-filter:blur(10px);padding:4vh 4vw;}
+.modal.open{display:flex;animation:fadeIn .25s ease both;}
+.sheet{width:min(880px,92vw);border-radius:26px;padding:clamp(1.2rem,4vh,3rem) clamp(1.2rem,4vw,3.4rem);
+  background:linear-gradient(180deg,rgba(14,30,68,.97),rgba(5,12,32,.98));
+  border:1px solid var(--stroke-strong);box-shadow:0 40px 120px -40px #000,0 0 90px -40px var(--glow);
+  text-align:center;animation:popSheet .35s cubic-bezier(.2,1.3,.4,1) both;}
+@keyframes popSheet{from{opacity:0;transform:translateY(24px) scale(.96);}to{opacity:1;transform:none;}}
+.sheet h2{margin:0 0 .6em;font-size:clamp(1.1rem,2.7vw,2.3rem);font-weight:900;letter-spacing:.12em;text-transform:uppercase;}
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,2vw,22px);}
+@media (max-width:640px){.choice-grid{grid-template-columns:1fr;}}
+.choice{cursor:pointer;border-radius:20px;padding:clamp(1rem,3vh,2rem);border:1px solid var(--stroke-strong);
+  background:linear-gradient(180deg,rgba(22,50,110,.9),rgba(8,18,46,.94));transition:.16s ease;}
+.choice:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 20px 50px -24px var(--glow);}
+.choice .big{font-size:clamp(1.6rem,4vw,3rem);}
+.choice .nm{display:block;margin-top:.4em;font-size:clamp(.72rem,1.4vw,1.15rem);font-weight:900;letter-spacing:.16em;text-transform:uppercase;}
+.choice .sub{display:block;margin-top:.35em;font-size:clamp(.6rem,1.1vw,.9rem);color:var(--muted);letter-spacing:.18em;font-weight:700;}
+
+/* timer modal */
+.timer-title{font-size:clamp(.7rem,1.5vw,1.2rem);letter-spacing:.3em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:.8em;}
+.dial{position:relative;width:min(46vh,46vw,420px);aspect-ratio:1;margin:0 auto;display:grid;place-items:center;}
+.dial svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);}
+.dial .track{fill:none;stroke:rgba(255,255,255,.09);stroke-width:8;}
+.dial .arc{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;
+  filter:drop-shadow(0 0 14px var(--glow));transition:stroke-dashoffset .35s linear,stroke .3s ease;}
+.dial .num{position:relative;font-size:clamp(3rem,15vh,9rem);font-weight:900;line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;text-shadow:0 0 40px var(--glow);}
+.dial.warn{animation:warnPulse .5s ease-in-out infinite alternate;}
+.dial.warn .arc{stroke:var(--red);filter:drop-shadow(0 0 22px rgba(255,59,78,.8));}
+.dial.warn .num{color:var(--red);text-shadow:0 0 50px rgba(255,59,78,.9);}
+@keyframes warnPulse{from{transform:scale(1);}to{transform:scale(1.045);}}
+.timer-msg{margin-top:1em;font-size:clamp(1rem,2.6vw,2.2rem);font-weight:900;letter-spacing:.2em;text-transform:uppercase;min-height:1.2em;}
+.timer-msg.done{color:var(--red);animation:popIn .4s ease both;}
+.timer-actions{display:flex;gap:14px;justify-content:center;margin-top:1.2em;flex-wrap:wrap;}
+
+/* ---------- PRESENTER PANEL ---------- */
+.presenter{position:fixed;top:0;right:0;bottom:0;z-index:60;width:min(430px,94vw);
+  transform:translateX(102%);transition:transform .32s cubic-bezier(.3,1,.4,1);
+  background:linear-gradient(180deg,#060e22,#04080f);border-left:1px solid var(--stroke-strong);
+  box-shadow:-30px 0 80px -40px #000;display:flex;flex-direction:column;}
+.presenter.open{transform:none;}
+.pres-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--stroke);}
+.pres-head b{font-size:.85rem;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);}
+.pres-body{flex:1;overflow:auto;padding:14px 16px 24px;display:flex;flex-direction:column;gap:14px;}
+.pres-body::-webkit-scrollbar{width:8px;}
+.pres-body::-webkit-scrollbar-thumb{background:rgba(120,170,255,.28);border-radius:8px;}
+.pblock{border:1px solid var(--stroke);border-radius:14px;padding:12px;background:rgba(10,22,52,.55);}
+.pblock h4{margin:0 0 8px;font-size:.62rem;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);font-weight:800;}
+.pq{font-size:.86rem;font-weight:700;line-height:1.35;color:#dbe8ff;}
+.pans{margin-top:8px;font-size:1.05rem;font-weight:900;color:var(--green);letter-spacing:.04em;}
+.pwhy{margin-top:8px;font-size:.78rem;line-height:1.35;color:#b9cdf0;font-style:italic;}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.pbtn{cursor:pointer;border-radius:10px;border:1px solid var(--stroke-strong);padding:9px 8px;
+  background:rgba(20,44,96,.6);font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  transition:.14s ease;}
+.pbtn:hover:not(:disabled){background:rgba(38,78,158,.75);transform:translateY(-1px);}
+.pbtn:disabled{opacity:.35;cursor:not-allowed;}
+.pbtn.ok{border-color:var(--green);color:#9dffca;}
+.pbtn.no{border-color:var(--red);color:#ffb3bb;}
+.pbtn.warn{border-color:var(--gold);color:#ffe0a0;}
+.plist{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.plist button{cursor:pointer;border-radius:8px;border:1px solid var(--stroke);background:rgba(255,255,255,.05);
+  padding:7px 0;font-size:.7rem;font-weight:900;color:var(--muted);transition:.14s ease;}
+.plist button:hover{border-color:var(--accent);color:#fff;}
+.plist button.now{background:var(--accent);color:#04122c;border-color:var(--accent);}
+.plist button.hit{border-color:var(--green);color:#9dffca;}
+.plist button.miss{border-color:var(--red);color:#ffb3bb;}
+.pll{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;font-size:.72rem;font-weight:800;
+  border-bottom:1px dashed rgba(120,170,255,.16);}
+.pll:last-child{border-bottom:0;}
+.tag{font-size:.6rem;font-weight:900;letter-spacing:.14em;padding:.25em .6em;border-radius:999px;}
+.tag.free{color:#9dffca;background:rgba(18,201,107,.16);border:1px solid rgba(18,201,107,.5);}
+.tag.used{color:#ffb3bb;background:rgba(255,59,78,.14);border:1px solid rgba(255,59,78,.5);}
+.pkeys{font-size:.66rem;color:var(--muted);line-height:1.9;}
+.pkeys kbd{margin-right:.2em;}
+
+/* ---------- END SCREEN ---------- */
+#screen-end{align-items:center;justify-content:center;text-align:center;padding:3vh 4vw;gap:clamp(8px,1.8vh,22px);}
+.trophy{font-size:clamp(2.4rem,9vh,6rem);animation:trophyIn .9s cubic-bezier(.2,1.4,.3,1) both;filter:drop-shadow(0 0 40px rgba(255,194,61,.7));}
+@keyframes trophyIn{from{opacity:0;transform:scale(.3) rotate(-25deg);}to{opacity:1;transform:none;}}
+.end-title{margin:0;font-size:clamp(1.8rem,6.4vw,5.4rem);font-weight:900;letter-spacing:-.01em;text-transform:uppercase;line-height:1;
+  background:linear-gradient(180deg,#fff8e2,var(--gold) 55%,#b4750a);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 8px 34px rgba(255,194,61,.45));animation:dropIn .8s .15s cubic-bezier(.2,1.2,.3,1) both;}
+.end-score{font-size:clamp(2.6rem,11vw,8rem);font-weight:900;line-height:1;letter-spacing:-.03em;
+  background:linear-gradient(180deg,#fff,#7fb6ff);-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:popIn .6s .5s cubic-bezier(.2,1.5,.4,1) both;}
+.end-stats{display:flex;gap:clamp(12px,3vw,40px);flex-wrap:wrap;justify-content:center;animation:fadeIn .6s .7s ease both;}
+.end-stat{min-width:clamp(100px,14vw,190px);padding:clamp(.6rem,1.6vh,1.2rem) clamp(.8rem,1.6vw,1.6rem);
+  border-radius:16px;background:var(--panel);border:1px solid var(--stroke);}
+.end-stat b{display:block;font-size:clamp(1.2rem,3.4vw,2.6rem);font-weight:900;line-height:1.1;}
+.end-stat span{font-size:clamp(.55rem,1vw,.8rem);letter-spacing:.24em;text-transform:uppercase;color:var(--muted);font-weight:800;}
+.end-stat.ok b{color:var(--green);} .end-stat.no b{color:var(--red);} .end-stat.gold b{color:var(--gold);}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden;}
+.confetti i{position:absolute;top:-8vh;width:9px;height:16px;border-radius:2px;opacity:.9;
+  animation:fall linear forwards;}
+@keyframes fall{to{transform:translateY(112vh) rotate(760deg);opacity:.85;}}
+
+/* flash overlay for reveals */
+.flash{position:fixed;inset:0;z-index:35;pointer-events:none;opacity:0;}
+.flash.go{animation:flashOut .6s ease both;}
+@keyframes flashOut{0%{opacity:.5;}100%{opacity:0;}}
+
+.toast{position:fixed;left:50%;bottom:3vh;transform:translate(-50%,20px);z-index:70;opacity:0;
+  padding:.6em 1.4em;border-radius:999px;background:rgba(6,14,36,.95);border:1px solid var(--stroke-strong);
+  font-size:.8rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;transition:.25s ease;}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+
+@media (max-width:760px){
+  .answers{grid-template-columns:1fr;}
+  .underbar{flex-direction:column;}
+  .rail{flex-wrap:wrap;}
+}
+@media (max-height:520px){
+  .qtext{font-size:clamp(.9rem,2.1vw,1.5rem);}
+}
+</style>
+</head>
+<body class="tier-easy">
+
+<!-- ============== BACKGROUND ============== -->
+<div class="bg" aria-hidden="true">
+  <div class="beams"></div>
+  <div class="grid-floor"></div>
+  <div class="vignette"></div>
+</div>
+<div class="flash" id="flash" aria-hidden="true"></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="app">
+
+  <!-- ============== START SCREEN ============== -->
+  <section class="screen active" id="screen-start">
+    <div class="start-badge"><span class="dot"></span> Live · Anatomy Quiz Show</div>
+    <h1 class="title"><span class="l1">Musculoskeletal</span><span class="l2">Challenge</span></h1>
+    <hr class="rule" />
+    <div class="start-stats">
+      <div class="stat"><b>20</b><span>Questions</span></div>
+      <div class="stat"><b>3</b><span>Lifelines</span></div>
+      <div class="stat"><b>1</b><span>Winner</span></div>
+    </div>
+    <button class="btn-hero" id="btn-start">Comenzar concurso</button>
+    <div class="start-lifelines">
+      <div class="ll-card"><span class="ico">✂️</span><span class="nm">50 / 50</span></div>
+      <div class="ll-card"><span class="ico">📱</span><span class="nm">Teléfono</span></div>
+      <div class="ll-card"><span class="ico">📝</span><span class="nm">Apuntes</span></div>
+    </div>
+    <p class="start-hint">
+      <kbd>P</kbd> panel del presentador · <kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> respuesta ·
+      <kbd>Enter</kbd> confirmar · <kbd>←</kbd><kbd>→</kbd> navegar · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> comodines
+    </p>
+    <div style="display:flex;gap:10px;margin-top:.6vh">
+      <button class="iconbtn" id="btn-sound-0" title="Silenciar / activar sonido">🔊</button>
+      <button class="iconbtn" id="btn-full-0" title="Pantalla completa">⛶</button>
+    </div>
+  </section>
+
+  <!-- ============== QUIZ SCREEN ============== -->
+  <section class="screen" id="screen-quiz">
+    <header class="topbar">
+      <div class="brand"><b>Musculoskeletal Challenge</b><span>Anatomy · Live Quiz</span></div>
+      <div class="spacer"></div>
+      <div class="qcount"><small>PREGUNTA</small> <span id="q-now">1</span> <small>/ 20</small></div>
+      <div class="tierchip" id="tier-chip">🟢 Easy</div>
+      <div class="lifelines" id="lifelines">
+        <button class="ll" id="ll-fifty"><span class="ic">✂️</span> 50/50</button>
+        <button class="ll" id="ll-phone"><span class="ic">📱</span> Teléfono</button>
+        <button class="ll" id="ll-notes"><span class="ic">📝</span> Apuntes</button>
+      </div>
+      <button class="iconbtn" id="btn-sound" title="Silenciar / activar sonido (M)">🔊</button>
+      <button class="iconbtn" id="btn-full" title="Pantalla completa (F)">⛶</button>
+      <button class="iconbtn" id="btn-pres" title="Panel del presentador (P)">🎬</button>
+    </header>
+
+    <div class="progress-wrap">
+      <div class="progress"><div class="fill" id="progress-fill"></div></div>
+    </div>
+
+    <main class="stage">
+      <div class="qcard"><h2 class="qtext" id="q-text">—</h2></div>
+
+      <div class="answers" id="answers">
+        <button class="ans" data-k="A"><span class="letter">A</span><span class="txt"></span></button>
+        <button class="ans" data-k="B"><span class="letter">B</span><span class="txt"></span></button>
+        <button class="ans" data-k="C"><span class="letter">C</span><span class="txt"></span></button>
+        <button class="ans" data-k="D"><span class="letter">D</span><span class="txt"></span></button>
+      </div>
+
+      <div class="underbar">
+        <div class="why" id="why"><b>Why?</b><p id="why-text"></p></div>
+        <button class="btn primary" id="btn-confirm">Confirmar</button>
+        <button class="btn gold" id="btn-next" style="display:none">Siguiente pregunta →</button>
+      </div>
+    </main>
+
+    <nav class="rail" id="rail" aria-label="Progreso de preguntas"></nav>
+  </section>
+
+  <!-- ============== END SCREEN ============== -->
+  <section class="screen" id="screen-end">
+    <div class="trophy">🏆</div>
+    <h1 class="end-title">Challenge Completed</h1>
+    <div class="end-score" id="end-score">0/20</div>
+    <div class="end-stats">
+      <div class="end-stat ok"><b id="end-ok">0</b><span>Correctas</span></div>
+      <div class="end-stat no"><b id="end-no">0</b><span>Incorrectas</span></div>
+      <div class="end-stat"><b id="end-pct">0%</b><span>Porcentaje</span></div>
+      <div class="end-stat gold"><b id="end-ll">0/3</b><span>Comodines usados</span></div>
+    </div>
+    <div id="end-lllist" style="color:var(--muted);font-weight:700;letter-spacing:.18em;text-transform:uppercase;font-size:clamp(.58rem,1.05vw,.85rem)"></div>
+    <button class="btn-hero" id="btn-again">Jugar de nuevo</button>
+  </section>
+</div>
+
+<!-- ============== PHONE CHOICE MODAL ============== -->
+<div class="modal" id="modal-phone">
+  <div class="sheet">
+    <h2>¿Qué quieres utilizar?</h2>
+    <div class="choice-grid">
+      <button class="choice" id="choice-internet"><span class="big">🌐</span><span class="nm">Internet</span><span class="sub">20 segundos</span></button>
+      <button class="choice" id="choice-call"><span class="big">☎️</span><span class="nm">Llamada</span><span class="sub">2 minutos</span></button>
+    </div>
+    <p style="color:var(--muted);font-size:clamp(.6rem,1.1vw,.85rem);letter-spacing:.14em;margin:1.4em 0 0;font-weight:700;text-transform:uppercase">
+      Ambas opciones gastan el mismo comodín · <kbd>ESC</kbd> cancelar
+    </p>
+  </div>
+</div>
+
+<!-- ============== TIMER MODAL ============== -->
+<div class="modal" id="modal-timer">
+  <div class="sheet">
+    <div class="timer-title" id="timer-title">Internet</div>
+    <div class="dial" id="dial">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="track" cx="100" cy="100" r="92"></circle>
+        <circle class="arc" id="arc" cx="100" cy="100" r="92" stroke-dasharray="578.05" stroke-dashoffset="0"></circle>
+      </svg>
+      <div class="num" id="timer-num">20</div>
+    </div>
+    <div class="timer-msg" id="timer-msg"></div>
+    <div class="timer-actions">
+      <button class="btn" id="timer-restart">↻ Reiniciar</button>
+      <button class="btn primary" id="timer-close">Finalizar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== PRESENTER PANEL ============== -->
+<aside class="presenter" id="presenter" aria-label="Panel del presentador">
+  <div class="pres-head">
+    <b>🎬 Modo presentador</b>
+    <div style="flex:1"></div>
+    <button class="iconbtn" id="pres-close" title="Cerrar (P)">✕</button>
+  </div>
+  <div class="pres-body">
+    <div class="pblock">
+      <h4>Pregunta actual · <span id="p-num">1/20</span> · <span id="p-tier">Easy</span></h4>
+      <div class="pq" id="p-question">—</div>
+      <div class="pans" id="p-answer">✔ —</div>
+      <div class="pwhy" id="p-why">—</div>
+    </div>
+
+    <div class="pblock">
+      <h4>Control</h4>
+      <div class="pgrid">
+        <button class="pbtn" id="p-prev">← Anterior</button>
+        <button class="pbtn" id="p-next">Siguiente →</button>
+        <button class="pbtn" id="p-confirm">✔ Confirmar</button>
+        <button class="pbtn" id="p-reveal">👁 Revelar</button>
+        <button class="pbtn ok" id="p-mark-ok">Marcar correcta</button>
+        <button class="pbtn no" id="p-mark-no">Marcar incorrecta</button>
+        <button class="pbtn warn" id="p-clear">↺ Reabrir pregunta</button>
+        <button class="pbtn no" id="p-reset">⟲ Reiniciar concurso</button>
+      </div>
+    </div>
+
+    <div class="pblock">
+      <h4>Comodines</h4>
+      <div class="pll"><span>✂️ 50/50</span><span class="tag free" id="p-t-fifty">Disponible</span><button class="pbtn" id="p-use-fifty" style="max-width:110px">Usar</button></div>
+      <div class="pll"><span>📱 Teléfono</span><span class="tag free" id="p-t-phone">Disponible</span><button class="pbtn" id="p-use-phone" style="max-width:110px">Usar</button></div>
+      <div class="pll"><span>📝 Apuntes</span><span class="tag free" id="p-t-notes">Disponible</span><button class="pbtn" id="p-use-notes" style="max-width:110px">Usar</button></div>
+      <div class="pgrid" style="margin-top:10px">
+        <button class="pbtn" id="p-timer-restart">↻ Reiniciar temporizador</button>
+        <button class="pbtn" id="p-ll-reset">⟲ Restaurar comodines</button>
+      </div>
+    </div>
+
+    <div class="pblock">
+      <h4>Saltar a pregunta</h4>
+      <div class="plist" id="p-list"></div>
+    </div>
+
+    <div class="pblock">
+      <h4>Atajos de teclado</h4>
+      <div class="pkeys">
+        <kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> seleccionar respuesta<br/>
+        <kbd>Enter</kbd> confirmar · <kbd>→</kbd> siguiente · <kbd>←</kbd> anterior<br/>
+        <kbd>1</kbd> 50/50 · <kbd>2</kbd> teléfono · <kbd>3</kbd> apuntes<br/>
+        <kbd>P</kbd> panel · <kbd>ESC</kbd> cerrar modales · <kbd>M</kbd> sonido · <kbd>F</kbd> pantalla completa
+      </div>
+    </div>
+  </div>
+</aside>
+
+<style>
+/* tier intensity: the set gets hotter every five questions */
+.tier-medium .beams{opacity:.16;}
+.tier-hard .beams{opacity:.2;animation-duration:60s;}
+.tier-extreme .beams{opacity:.26;animation-duration:38s;}
+.tier-hard .qcard,.tier-extreme .qcard{border-color:rgba(255,194,61,.4);}
+.tier-extreme .qcard{box-shadow:0 18px 60px -30px #000,0 0 70px -40px var(--gold),inset 0 1px 0 rgba(255,255,255,.07);}
+.tier-extreme .brand b,.tier-hard .brand b{background:linear-gradient(180deg,#fff6de,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.tier-extreme .ans .letter{border-color:rgba(255,194,61,.5);color:var(--gold);background:rgba(255,194,61,.1);}
+.tier-extreme .ans.sel .letter{color:#2a1a00;background:var(--gold);}
+</style>
+
+<script>
+"use strict";
+/* ============================================================
+   MUSCULOSKELETAL CHALLENGE — application logic
+   ============================================================ */
+
+/* ---------------- 1. QUESTION BANK (20) ---------------- */
+const QUESTIONS = [
+  { q:"How many bones are there in the human skeletal system?",
+    a:{A:"126",B:"206",C:"306",D:"80"}, c:"B",
+    w:"The skeletal system contains 206 bones." },
+
+  { q:"Which structure connects muscle to bone?",
+    a:{A:"Ligament",B:"Cartilage",C:"Tendon",D:"Joint"}, c:"C",
+    w:"Tendons are connective tissues that attach muscles to bones." },
+
+  { q:"How many vertebrae are in the vertebral column?",
+    a:{A:"26",B:"30",C:"33",D:"40"}, c:"C",
+    w:"The vertebral column is composed of 33 vertebrae." },
+
+  { q:"Which type of muscle is attached to bones and moves the body?",
+    a:{A:"Cardiac muscle",B:"Smooth muscle",C:"Skeletal muscle",D:"Internal muscle"}, c:"C",
+    w:"Skeletal muscle is attached to bones and produces body movement." },
+
+  { q:"Which bones form the hip joint?",
+    a:{A:"Femur and tibia",B:"Pelvis and femur",C:"Tibia and fibula",D:"Pelvis and tibia"}, c:"B",
+    w:"The hip joint is formed by the pelvis and femur." },
+
+  { q:"Which part of a long bone is mainly made of compact, dense bone?",
+    a:{A:"Epiphysis",B:"Diaphysis",C:"Cartilage",D:"Perichondrium"}, c:"B",
+    w:"The diaphysis contains relatively solid and dense compact bone." },
+
+  { q:"What is the main function of articular cartilage at the end of a bone?",
+    a:{A:"Produce blood cells",B:"Attach muscle to bone",C:"Reduce friction between bones",D:"Restrict movement"}, c:"C",
+    w:"Articular cartilage covers the ends of bones and reduces friction between them." },
+
+  { q:"Which layer of fascia surrounds bundles of muscle fibres called fascicles?",
+    a:{A:"Epimysium",B:"Perimysium",C:"Endomysium",D:"Perichondrium"}, c:"B",
+    w:"Perimysium surrounds bundles of muscle fibres called fascicles." },
+
+  { q:"Which type of joint is the most important for mobility?",
+    a:{A:"Fibrous",B:"Cartilaginous",C:"Synovial",D:"Fixed"}, c:"C",
+    w:"Synovial joints are the most common and the most important joints for mobility." },
+
+  { q:"What happens to the antagonist when the agonist contracts according to reciprocal inhibition?",
+    a:{A:"It also contracts",B:"It relaxes",C:"It becomes shorter",D:"It becomes the agonist"}, c:"B",
+    w:"In reciprocal inhibition, the agonist contracts while the antagonist relaxes." },
+
+  { q:"Which combination correctly describes the vertebral column?",
+    a:{A:"7 cervical, 12 thoracic, 5 lumbar, 5 sacral, 4 coccygeal",
+       B:"5 cervical, 12 thoracic, 7 lumbar, 5 sacral, 4 coccygeal",
+       C:"7 cervical, 10 thoracic, 5 lumbar, 6 sacral, 5 coccygeal",
+       D:"12 cervical, 7 thoracic, 5 lumbar, 5 sacral, 4 coccygeal"}, c:"A",
+    w:"The 33 vertebrae consist of 7 cervical, 12 thoracic, 5 lumbar, 5 sacral and 4 coccygeal vertebrae." },
+
+  { q:"Why does cartilage generally heal slowly after an injury?",
+    a:{A:"It contains too much collagen",B:"It has no elastic fibres",C:"It lacks its own blood supply",D:"It is attached directly to muscles"}, c:"C",
+    w:"Cartilage heals slowly because it lacks blood vessels and therefore its own blood supply." },
+
+  { q:"A muscle becomes larger because its muscle cells increase in size. What characteristic is this?",
+    a:{A:"Atrophy",B:"Hypertrophy",C:"Extensibility",D:"Excitability"}, c:"B",
+    w:"Hypertrophy is an increase in muscle size, generally caused by an increase in muscle-cell size." },
+
+  { q:"Which statement correctly distinguishes ligaments from tendons?",
+    a:{A:"Ligaments connect muscle to bone; tendons connect bone to bone",
+       B:"Both connect muscle to bone",
+       C:"Ligaments connect bone to bone; tendons connect muscle to bone",
+       D:"Both connect bone to bone"}, c:"C",
+    w:"Ligaments connect bones to other bones, whereas tendons connect muscles to bones." },
+
+  { q:"Which movements occur mainly in the frontal plane?",
+    a:{A:"Flexion and extension",B:"Abduction and adduction",C:"Internal and external rotation",D:"Pronation and supination"}, c:"B",
+    w:"The frontal plane is associated with abduction and adduction movements." },
+
+  { q:"An athlete violently overstretches a ligament and it does not return completely to its original length. What is the most likely consequence?",
+    a:{A:"Increased joint stability",
+       B:"Reduced joint stability and increased injury risk",
+       C:"Increased cartilage production",
+       D:"Reduced joint mobility with increased stability"}, c:"B",
+    w:"An overstretched ligament may remain elongated, reducing joint stability and increasing the risk of further injury." },
+
+  { q:"During a biceps curl, which sequence best describes the concentric phase?",
+    a:{A:"Biceps lengthens → triceps contracts → elbow extends",
+       B:"Biceps contracts and shortens → triceps relaxes and elongates → elbow flexes",
+       C:"Triceps contracts and shortens → biceps relaxes → elbow flexes",
+       D:"Both biceps and triceps shorten simultaneously → elbow flexes"}, c:"B",
+    w:"During elbow flexion, the biceps acts as the agonist and shortens while the antagonist triceps relaxes and elongates." },
+
+  { q:"An athlete performs shoulder abduction from the anatomical position. Which combination correctly identifies the plane and axis involved?",
+    a:{A:"Sagittal plane + vertical axis",
+       B:"Frontal plane + anterior-posterior axis",
+       C:"Transverse plane + coronal axis",
+       D:"Sagittal plane + anterior-posterior axis"}, c:"B",
+    w:"Abduction occurs in the frontal plane around the anterior-posterior axis." },
+
+  { q:"Which sequence correctly orders the three fascia layers from the entire muscle toward an individual muscle fibre?",
+    a:{A:"Endomysium → Perimysium → Epimysium",
+       B:"Perimysium → Epimysium → Endomysium",
+       C:"Epimysium → Perimysium → Endomysium",
+       D:"Epimysium → Endomysium → Perimysium"}, c:"C",
+    w:"Epimysium covers the entire muscle, perimysium surrounds fascicles and endomysium surrounds individual muscle fibres." },
+
+  { q:"A joint allows a very large range of movement, but its supporting structures provide relatively little stability. Based on the movement–stability relationship, which outcome is most consistent?",
+    a:{A:"Greater movement → greater stability → lower injury risk",
+       B:"Greater movement → lower stability → greater injury risk",
+       C:"Lower stability → lower movement → lower injury risk",
+       D:"Greater movement has no relationship with stability"}, c:"B",
+    w:"Increased movement is associated with decreased stability, while decreased stability increases injury risk." }
+];
+
+const LETTERS = ["A","B","C","D"];
+const TIERS = [
+  { key:"easy",    label:"🟢 Easy",    from:0,  to:4  },
+  { key:"medium",  label:"🟡 Medium",  from:5,  to:9  },
+  { key:"hard",    label:"🟠 Hard",    from:10, to:14 },
+  { key:"extreme", label:"🔴 Extreme", from:15, to:19 }
+];
+const tierOf = i => TIERS.find(t => i >= t.from && i <= t.to) || TIERS[0];
+
+/* ---------------- 2. SOUND (fully synthesised, no files) ---------------- */
+const Snd = {
+  ctx:null, master:null,
+  init(){
+    if (this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.42;
+    this.master.connect(this.ctx.destination);
+  },
+  ready(){
+    if (S.muted) return false;
+    this.init();
+    if (!this.ctx) return false;
+    if (this.ctx.state === "suspended") this.ctx.resume();
+    return true;
+  },
+  note(freq, o){
+    o = o || {};
+    if (!this.ready()) return;
+    const t0 = this.ctx.currentTime + (o.at || 0);
+    const dur = o.dur || 0.18, vol = o.vol == null ? 0.25 : o.vol;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = o.type || "sine";
+    osc.frequency.setValueAtTime(freq, t0);
+    if (o.to) osc.frequency.exponentialRampToValueAtTime(Math.max(20, o.to), t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g); g.connect(this.master);
+    osc.start(t0); osc.stop(t0 + dur + 0.05);
+  },
+  select(){ this.note(520,{type:"triangle",dur:.1,vol:.22}); this.note(780,{type:"triangle",dur:.09,vol:.12,at:.04}); },
+  lock(){ this.note(300,{type:"square",dur:.12,vol:.2}); this.note(180,{type:"sine",dur:.3,vol:.22,at:.08,to:120}); },
+  suspense(){
+    if (!this.ready()) return;
+    const steps = 7;
+    for (let k = 0; k < steps; k++){
+      this.note(120 + k*26, { type:"sine", dur:.16, vol:.22, at: k*0.19 });
+      this.note(60 + k*12,  { type:"triangle", dur:.2, vol:.14, at: k*0.19 });
+    }
+  },
+  correct(){
+    [523.25, 659.25, 783.99, 1046.5].forEach((f,k)=> this.note(f,{type:"triangle",dur:.34,vol:.26,at:k*0.085}));
+    this.note(1567.98,{type:"sine",dur:.7,vol:.14,at:.34});
+  },
+  wrong(){
+    this.note(196,{type:"sawtooth",dur:.55,vol:.2,to:82});
+    this.note(146,{type:"square",dur:.5,vol:.13,at:.03,to:70});
+  },
+  tick(){ this.note(880,{type:"sine",dur:.05,vol:.1}); },
+  urgent(){ this.note(1200,{type:"square",dur:.1,vol:.26}); this.note(1600,{type:"square",dur:.08,vol:.14,at:.09}); },
+  timeUp(){ this.note(320,{type:"sawtooth",dur:.7,vol:.24,to:110}); this.note(160,{type:"square",dur:.8,vol:.16,at:.05,to:60}); },
+  finalQuestion(){
+    [110,146.83,220].forEach((f,k)=> this.note(f,{type:"sawtooth",dur:1.1,vol:.16,at:k*0.06}));
+    this.note(1318.51,{type:"sine",dur:.9,vol:.12,at:.25});
+  },
+  victory(){
+    const mel = [523.25,659.25,783.99,1046.5,1318.51,1046.5,1318.51,1567.98];
+    mel.forEach((f,k)=> this.note(f,{type:"triangle",dur:.42,vol:.24,at:k*0.13}));
+    [261.63,329.63,392].forEach(f=> this.note(f,{type:"sine",dur:1.8,vol:.12,at:1.0}));
+  }
+};
+
+/* ---------------- 3. STATE ---------------- */
+const KEY = "msk-challenge-v1";
+const freshState = () => ({
+  screen:"start",
+  i:0,
+  sel:   new Array(20).fill(null),   // pending (not yet confirmed) selection
+  answers:new Array(20).fill(null),  // {sel, ok, manual}
+  elim:  {},                         // {questionIndex:[letters removed by 50/50]}
+  ll:{ fifty:false, phone:false, notes:false },
+  llUsed:{ fifty:null, phone:null, notes:null }, // how each lifeline was spent
+  muted:false
+});
+let S = freshState();
+let phase = "idle";        // idle | suspense
+let suspenseTimer = null;
+let presOpen = false;      // presenter drawer
+
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (!d || typeof d !== "object") return;
+    const f = freshState();
+    S = Object.assign(f, d);
+    S.sel = Array.isArray(d.sel) && d.sel.length === 20 ? d.sel : f.sel;
+    S.answers = Array.isArray(d.answers) && d.answers.length === 20 ? d.answers : f.answers;
+    S.elim = d.elim && typeof d.elim === "object" ? d.elim : {};
+    S.ll = Object.assign({fifty:false,phone:false,notes:false}, d.ll || {});
+    S.llUsed = Object.assign({fifty:null,phone:null,notes:null}, d.llUsed || {});
+    S.i = Math.min(19, Math.max(0, d.i | 0));
+    if (["start","quiz","end"].indexOf(S.screen) === -1) S.screen = "start";
+  }catch(e){ S = freshState(); }
+}
+
+/* ---------------- 4. DOM SHORTCUTS ---------------- */
+const $  = sel => document.querySelector(sel);
+const $$ = sel => Array.prototype.slice.call(document.querySelectorAll(sel));
+const el = {
+  body:document.body,
+  screens:{ start:$("#screen-start"), quiz:$("#screen-quiz"), end:$("#screen-end") },
+  qNow:$("#q-now"), qText:$("#q-text"), tierChip:$("#tier-chip"),
+  answers:$("#answers"), ansBtns:$$("#answers .ans"),
+  fill:$("#progress-fill"), rail:$("#rail"),
+  why:$("#why"), whyText:$("#why-text"),
+  confirm:$("#btn-confirm"), next:$("#btn-next"),
+  llFifty:$("#ll-fifty"), llPhone:$("#ll-phone"), llNotes:$("#ll-notes"),
+  sound:$("#btn-sound"), sound0:$("#btn-sound-0"),
+  modalPhone:$("#modal-phone"), modalTimer:$("#modal-timer"),
+  timerTitle:$("#timer-title"), timerNum:$("#timer-num"), timerMsg:$("#timer-msg"),
+  arc:$("#arc"), dial:$("#dial"),
+  presenter:$("#presenter"), pList:$("#p-list"),
+  flash:$("#flash"), confetti:$("#confetti"), toast:$("#toast")
+};
+const ARC_LEN = 2 * Math.PI * 92;
+
+const isRevealed = i => !!S.answers[i];
+const curQ = () => QUESTIONS[S.i];
+const elimFor = i => S.elim[i] || [];
+
+/* ---------------- 5. RENDER ---------------- */
+function render(){
+  // screens
+  Object.keys(el.screens).forEach(k => el.screens[k].classList.toggle("active", S.screen === k));
+
+  const t = tierOf(S.i);
+  const theme = S.screen === "quiz" ? "tier-" + t.key
+              : S.screen === "end"  ? "tier-win" : "tier-intro";
+  el.body.className = theme + (presOpen ? " pres-open" : "");
+
+  if (S.screen === "quiz") renderQuiz(t);
+  if (S.screen === "end")  renderEnd();
+  renderPresenter(t);
+  updateSoundIcons();
+}
+
+function renderQuiz(t){
+  const Q = curQ(), i = S.i, revealed = isRevealed(i), rec = S.answers[i];
+
+  el.qNow.textContent = i + 1;
+  el.tierChip.textContent = t.label;
+  el.qText.textContent = Q.q;
+  el.fill.style.width = (((revealed ? i + 1 : i) / 20) * 100) + "%";
+
+  const dead = elimFor(i);
+  el.ansBtns.forEach(btn => {
+    const k = btn.dataset.k;
+    btn.querySelector(".txt").textContent = Q.a[k];
+    btn.className = "ans";
+    btn.disabled = false;
+    if (dead.indexOf(k) !== -1){ btn.classList.add("dead"); btn.disabled = true; return; }
+    if (revealed){
+      btn.disabled = true;
+      if (k === Q.c) btn.classList.add("correct");
+      else if (rec.sel === k) btn.classList.add("wrong");
+      else btn.classList.add("dim");
+    } else if (S.sel[i] === k){
+      btn.classList.add("sel");
+      if (phase === "suspense") btn.classList.add("suspense");
+    } else if (phase === "suspense"){
+      btn.classList.add("dim");
+      btn.disabled = true;
+    }
+  });
+
+  // why + buttons
+  el.why.classList.toggle("show", revealed);
+  el.why.classList.toggle("miss", revealed && !rec.ok);
+  el.whyText.textContent = revealed ? Q.w : "";
+  el.confirm.style.display = revealed ? "none" : "";
+  el.confirm.disabled = !S.sel[i] || phase === "suspense";
+  el.confirm.textContent = phase === "suspense" ? "…" : "Confirmar";
+  el.next.style.display = revealed ? "" : "none";
+  el.next.textContent = i === 19 ? "Ver resultados 🏆" : "Siguiente pregunta →";
+
+  // lifelines
+  [["fifty", el.llFifty], ["phone", el.llPhone], ["notes", el.llNotes]].forEach(pair => {
+    const used = S.ll[pair[0]];
+    pair[1].classList.toggle("used", used);
+    pair[1].disabled = used;
+  });
+
+  renderRail();
+}
+
+function renderRail(){
+  if (el.rail.children.length !== 20){
+    el.rail.innerHTML = "";
+    for (let n = 0; n < 20; n++){
+      const b = document.createElement("button");
+      b.className = "pip";
+      b.textContent = n + 1;
+      b.dataset.tier = tierOf(n).key;
+      b.title = "Ir a la pregunta " + (n + 1);
+      b.addEventListener("click", () => goTo(n));
+      el.rail.appendChild(b);
+    }
+  }
+  Array.prototype.forEach.call(el.rail.children, (b, n) => {
+    const a = S.answers[n];
+    b.classList.toggle("hit",  !!a && a.ok);
+    b.classList.toggle("miss", !!a && !a.ok);
+    b.classList.toggle("now",  n === S.i);
+  });
+}
+
+function score(){
+  let ok = 0, no = 0;
+  S.answers.forEach(a => { if (a){ a.ok ? ok++ : no++; } });
+  return { ok, no, answered: ok + no };
+}
+
+function renderEnd(){
+  const s = score();
+  const pct = Math.round((s.ok / 20) * 100);
+  $("#end-score").textContent = s.ok + "/20";
+  $("#end-ok").textContent = s.ok;
+  $("#end-no").textContent = s.no;
+  $("#end-pct").textContent = pct + "%";
+  const usedList = [];
+  if (S.ll.fifty) usedList.push("✂️ 50/50");
+  if (S.ll.phone) usedList.push("📱 Teléfono" + (S.llUsed.phone ? " (" + S.llUsed.phone + ")" : ""));
+  if (S.ll.notes) usedList.push("📝 Apuntes");
+  $("#end-ll").textContent = usedList.length + "/3";
+  $("#end-lllist").textContent = usedList.length ? usedList.join("   ·   ") : "Ningún comodín utilizado";
+}
+
+/* ---------------- 6. GAME FLOW ---------------- */
+function startGame(){
+  Snd.init();
+  S.screen = "quiz";
+  save(); render();
+}
+
+function select(k){
+  const i = S.i;
+  if (S.screen !== "quiz" || phase !== "idle" || isRevealed(i)) return;
+  if (elimFor(i).indexOf(k) !== -1) return;
+  S.sel[i] = k;
+  Snd.select();
+  save(); render();
+}
+
+function confirmAnswer(){
+  const i = S.i;
+  if (S.screen !== "quiz" || phase !== "idle" || isRevealed(i) || !S.sel[i]) return;
+  phase = "suspense";
+  Snd.lock();
+  Snd.suspense();
+  render();
+  suspenseTimer = setTimeout(() => { suspenseTimer = null; reveal(); }, 1500);
+}
+
+function reveal(sel){
+  const i = S.i;
+  if (isRevealed(i)) return;
+  if (suspenseTimer){ clearTimeout(suspenseTimer); suspenseTimer = null; }
+  phase = "idle";
+  const chosen = sel !== undefined ? sel : S.sel[i];
+  const ok = chosen === QUESTIONS[i].c;
+  S.answers[i] = { sel: chosen, ok: ok, manual: false };
+  save(); render();
+  flash(ok ? "rgba(18,201,107,.45)" : "rgba(255,59,78,.45)");
+  ok ? Snd.correct() : Snd.wrong();
+}
+
+function markManual(ok){
+  const i = S.i;
+  if (suspenseTimer){ clearTimeout(suspenseTimer); suspenseTimer = null; }
+  phase = "idle";
+  S.answers[i] = { sel: S.sel[i], ok: !!ok, manual: true };
+  save(); render();
+  flash(ok ? "rgba(18,201,107,.45)" : "rgba(255,59,78,.45)");
+  ok ? Snd.correct() : Snd.wrong();
+  toast(ok ? "Marcada como CORRECTA" : "Marcada como INCORRECTA");
+}
+
+function reopenQuestion(){
+  const i = S.i;
+  if (suspenseTimer){ clearTimeout(suspenseTimer); suspenseTimer = null; }
+  phase = "idle";
+  S.answers[i] = null;
+  save(); render();
+  toast("Pregunta reabierta");
+}
+
+function goTo(n){
+  if (n < 0 || n > 19) return;
+  if (suspenseTimer){ clearTimeout(suspenseTimer); suspenseTimer = null; }
+  phase = "idle";
+  const was = S.i;
+  S.i = n;
+  S.screen = "quiz";
+  save(); render();
+  if (n === 19 && was !== 19) Snd.finalQuestion();
+}
+
+function nextQuestion(){
+  if (S.screen === "end") return;
+  if (S.i === 19){
+    if (isRevealed(19)) finish();
+    else goTo(19);
+    return;
+  }
+  goTo(S.i + 1);
+}
+function prevQuestion(){ if (S.i > 0) goTo(S.i - 1); }
+
+function finish(){
+  if (suspenseTimer){ clearTimeout(suspenseTimer); suspenseTimer = null; }
+  phase = "idle";
+  S.screen = "end";
+  save(); render();
+  Snd.victory();
+  confettiBurst();
+}
+
+function resetGame(){
+  stopTimer();
+  closeModal(el.modalTimer); closeModal(el.modalPhone);
+  if (suspenseTimer){ clearTimeout(suspenseTimer); suspenseTimer = null; }
+  const muted = S.muted;
+  S = freshState();
+  S.muted = muted;
+  phase = "idle";
+  el.confetti.innerHTML = "";
+  save(); render();
+}
+
+/* ---------------- 7. LIFELINES ---------------- */
+function useFifty(){
+  const i = S.i;
+  if (S.ll.fifty) { toast("El comodín 50/50 ya está usado"); return; }
+  if (S.screen !== "quiz" || isRevealed(i) || phase === "suspense") return;
+  const correct = QUESTIONS[i].c;
+  const wrongs = LETTERS.filter(k => k !== correct);
+  for (let j = wrongs.length - 1; j > 0; j--){
+    const r = Math.floor(Math.random() * (j + 1));
+    const tmp = wrongs[j]; wrongs[j] = wrongs[r]; wrongs[r] = tmp;
+  }
+  const removed = wrongs.slice(0, 2);
+  S.elim[i] = removed;
+  if (removed.indexOf(S.sel[i]) !== -1) S.sel[i] = null;
+  S.ll.fifty = true;
+  S.llUsed.fifty = "P" + (i + 1);
+  Snd.note(760,{type:"square",dur:.12,vol:.22});
+  Snd.note(420,{type:"square",dur:.22,vol:.2,at:.12,to:200});
+  el.llFifty.classList.add("spend");
+  setTimeout(()=> el.llFifty.classList.remove("spend"), 500);
+  save(); render();
+}
+
+function usePhone(){
+  if (S.ll.phone){ toast("El comodín teléfono ya está usado"); return; }
+  if (S.screen !== "quiz") return;
+  openModal(el.modalPhone);
+}
+
+function spendPhone(mode){
+  if (S.ll.phone) return;
+  S.ll.phone = true;
+  S.llUsed.phone = mode === "internet" ? "Internet" : "Llamada";
+  closeModal(el.modalPhone);
+  save(); render();
+  if (mode === "internet") startTimer({ kind:"internet", total:20, title:"🌐 Internet · Busca la respuesta", end:"Tiempo terminado" });
+  else startTimer({ kind:"call", total:120, title:"☎️ Llamada · 2 minutos", end:"Tiempo terminado" });
+}
+
+function useNotes(){
+  if (S.ll.notes){ toast("El comodín apuntes ya está usado"); return; }
+  if (S.screen !== "quiz") return;
+  S.ll.notes = true;
+  S.llUsed.notes = "P" + (S.i + 1);
+  save(); render();
+  startTimer({ kind:"notes", total:20, title:"📝 Tienes 20 segundos para consultar tus apuntes", end:"Cierra los apuntes" });
+}
+
+/* ---------------- 8. TIMERS ---------------- */
+let T = { id:null, endAt:0, total:0, kind:null, endMsg:"", last:-1, running:false };
+
+function fmt(sec, kind){
+  if (kind === "call"){
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+  return String(sec);
+}
+
+function startTimer(cfg){
+  stopTimer();
+  T.kind = cfg.kind; T.total = cfg.total; T.endMsg = cfg.end;
+  T.endAt = Date.now() + cfg.total * 1000;
+  T.last = -1; T.running = true;
+  el.timerTitle.textContent = cfg.title;
+  el.timerMsg.textContent = "";
+  el.timerMsg.classList.remove("done");
+  el.dial.classList.remove("warn");
+  el.arc.style.strokeDasharray = ARC_LEN;
+  el.arc.style.strokeDashoffset = 0;
+  $("#timer-restart").disabled = false;
+  openModal(el.modalTimer);
+  tickTimer();
+  T.id = setInterval(tickTimer, 100);
+}
+
+function tickTimer(){
+  const msLeft = Math.max(0, T.endAt - Date.now());
+  const sec = Math.ceil(msLeft / 1000);
+  const ratio = T.total ? msLeft / (T.total * 1000) : 0;
+  el.arc.style.strokeDashoffset = ARC_LEN * (1 - ratio);
+  if (sec !== T.last){
+    T.last = sec;
+    el.timerNum.textContent = fmt(sec, T.kind);
+    if (sec <= 5 && sec > 0){ el.dial.classList.add("warn"); Snd.urgent(); }
+    else if (sec > 5 && sec <= 10) Snd.tick();
+  }
+  if (msLeft <= 0) endTimer();
+}
+
+function endTimer(){
+  stopTimer();
+  el.timerNum.textContent = fmt(0, T.kind);
+  el.arc.style.strokeDashoffset = ARC_LEN;
+  el.timerMsg.textContent = T.endMsg;
+  el.timerMsg.classList.add("done");
+  el.dial.classList.remove("warn");
+  Snd.timeUp();
+}
+
+function stopTimer(){
+  if (T.id){ clearInterval(T.id); T.id = null; }
+  T.running = false;
+}
+
+function restartTimer(){
+  if (!T.kind) { toast("No hay ningún temporizador activo"); return; }
+  const titles = {
+    internet:"🌐 Internet · Busca la respuesta",
+    call:"☎️ Llamada · 2 minutos",
+    notes:"📝 Tienes 20 segundos para consultar tus apuntes"
+  };
+  const ends = { internet:"Tiempo terminado", call:"Tiempo terminado", notes:"Cierra los apuntes" };
+  startTimer({ kind:T.kind, total:T.total, title:titles[T.kind], end:ends[T.kind] });
+}
+
+/* ---------------- 9. MODALS / FX ---------------- */
+function openModal(m){ m.classList.add("open"); }
+function closeModal(m){ m.classList.remove("open"); }
+function anyModalOpen(){ return el.modalPhone.classList.contains("open") || el.modalTimer.classList.contains("open"); }
+
+function flash(color){
+  el.flash.style.background = "radial-gradient(60% 50% at 50% 50%," + color + ", transparent 70%)";
+  el.flash.classList.remove("go");
+  void el.flash.offsetWidth;
+  el.flash.classList.add("go");
+}
+
+let toastTimer = null;
+function toast(msg){
+  el.toast.textContent = msg;
+  el.toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> el.toast.classList.remove("show"), 2200);
+}
+
+function confettiBurst(){
+  const colors = ["#ffc23d","#4da6ff","#12c96b","#ffffff","#66e8ff"];
+  el.confetti.innerHTML = "";
+  for (let n = 0; n < 90; n++){
+    const p = document.createElement("i");
+    p.style.left = Math.random() * 100 + "vw";
+    p.style.background = colors[n % colors.length];
+    p.style.animationDuration = (2.6 + Math.random() * 2.4) + "s";
+    p.style.animationDelay = (Math.random() * 1.2) + "s";
+    p.style.transform = "rotate(" + (Math.random() * 360) + "deg)";
+    el.confetti.appendChild(p);
+  }
+  setTimeout(()=> { if (S.screen === "end") el.confetti.innerHTML = ""; }, 7000);
+}
+
+function toggleSound(){
+  S.muted = !S.muted;
+  if (!S.muted){ Snd.init(); Snd.select(); }
+  save(); updateSoundIcons();
+  toast(S.muted ? "Sonido silenciado" : "Sonido activado");
+}
+function updateSoundIcons(){
+  const ic = S.muted ? "🔇" : "🔊";
+  [el.sound, el.sound0].forEach(b => { if (b){ b.textContent = ic; b.classList.toggle("on", !S.muted); } });
+}
+
+function toggleFullscreen(){
+  const quiet = p => { if (p && p.catch) p.catch(()=> toast("Pantalla completa no disponible")); };
+  if (!document.fullscreenElement && !document.webkitFullscreenElement){
+    const el0 = document.documentElement;
+    const req = el0.requestFullscreen || el0.webkitRequestFullscreen;
+    if (req) quiet(req.call(el0)); else toast("Pantalla completa no disponible");
+  } else {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exit) quiet(exit.call(document));
+  }
+}
+
+/* ---------------- 10. PRESENTER PANEL ---------------- */
+function togglePresenter(force){
+  presOpen = force !== undefined ? !!force : !el.presenter.classList.contains("open");
+  el.presenter.classList.toggle("open", presOpen);
+  el.body.classList.toggle("pres-open", presOpen);
+  $("#btn-pres").classList.toggle("on", presOpen);
+}
+
+function renderPresenter(t){
+  const i = S.i, Q = QUESTIONS[i];
+  $("#p-num").textContent = (i + 1) + "/20";
+  $("#p-tier").textContent = t.label;
+  $("#p-question").textContent = Q.q;
+  $("#p-answer").textContent = "✔ " + Q.c + ") " + Q.a[Q.c];
+  $("#p-why").textContent = "WHY: " + Q.w;
+
+  $("#p-confirm").disabled = isRevealed(i) || !S.sel[i] || phase === "suspense";
+  $("#p-reveal").disabled  = isRevealed(i);
+  $("#p-clear").disabled   = !isRevealed(i);
+  $("#p-prev").disabled    = i === 0;
+
+  [["fifty","p-t-fifty","p-use-fifty"],["phone","p-t-phone","p-use-phone"],["notes","p-t-notes","p-use-notes"]]
+    .forEach(row => {
+      const used = S.ll[row[0]];
+      const tag = $("#" + row[1]);
+      tag.textContent = used ? ("Usado" + (S.llUsed[row[0]] ? " · " + S.llUsed[row[0]] : "")) : "Disponible";
+      tag.className = "tag " + (used ? "used" : "free");
+      $("#" + row[2]).disabled = used;
+    });
+  $("#p-timer-restart").disabled = !T.kind;
+
+  if (el.pList.children.length !== 20){
+    el.pList.innerHTML = "";
+    for (let n = 0; n < 20; n++){
+      const b = document.createElement("button");
+      b.textContent = n + 1;
+      b.title = (n + 1) + ". " + QUESTIONS[n].q + "\n✔ " + QUESTIONS[n].c + ") " + QUESTIONS[n].a[QUESTIONS[n].c];
+      b.addEventListener("click", ()=> goTo(n));
+      el.pList.appendChild(b);
+    }
+  }
+  Array.prototype.forEach.call(el.pList.children, (b, n) => {
+    const a = S.answers[n];
+    b.className = (n === S.i ? "now" : (a ? (a.ok ? "hit" : "miss") : ""));
+  });
+}
+
+/* ---------------- 11. EVENTS ---------------- */
+el.ansBtns.forEach(b => b.addEventListener("click", ()=> select(b.dataset.k)));
+$("#btn-start").addEventListener("click", startGame);
+$("#btn-again").addEventListener("click", ()=> { resetGame(); startGame(); });
+el.confirm.addEventListener("click", confirmAnswer);
+el.next.addEventListener("click", nextQuestion);
+
+el.llFifty.addEventListener("click", useFifty);
+el.llPhone.addEventListener("click", usePhone);
+el.llNotes.addEventListener("click", useNotes);
+
+$("#choice-internet").addEventListener("click", ()=> spendPhone("internet"));
+$("#choice-call").addEventListener("click", ()=> spendPhone("call"));
+$("#timer-close").addEventListener("click", ()=> { stopTimer(); closeModal(el.modalTimer); render(); });
+$("#timer-restart").addEventListener("click", restartTimer);
+
+[el.modalPhone, el.modalTimer].forEach(m => m.addEventListener("click", e => {
+  if (e.target === m){ if (m === el.modalTimer) stopTimer(); closeModal(m); render(); }
+}));
+
+el.sound.addEventListener("click", toggleSound);
+el.sound0.addEventListener("click", toggleSound);
+$("#btn-full").addEventListener("click", toggleFullscreen);
+$("#btn-full-0").addEventListener("click", toggleFullscreen);
+$("#btn-pres").addEventListener("click", ()=> togglePresenter());
+$("#pres-close").addEventListener("click", ()=> togglePresenter(false));
+
+$("#p-prev").addEventListener("click", prevQuestion);
+$("#p-next").addEventListener("click", nextQuestion);
+$("#p-confirm").addEventListener("click", confirmAnswer);
+$("#p-reveal").addEventListener("click", ()=> reveal());
+$("#p-mark-ok").addEventListener("click", ()=> markManual(true));
+$("#p-mark-no").addEventListener("click", ()=> markManual(false));
+$("#p-clear").addEventListener("click", reopenQuestion);
+$("#p-reset").addEventListener("click", ()=> { if (confirm("¿Reiniciar el concurso completo?")) resetGame(); });
+$("#p-use-fifty").addEventListener("click", useFifty);
+$("#p-use-phone").addEventListener("click", usePhone);
+$("#p-use-notes").addEventListener("click", useNotes);
+$("#p-timer-restart").addEventListener("click", restartTimer);
+$("#p-ll-reset").addEventListener("click", ()=> {
+  S.ll = { fifty:false, phone:false, notes:false };
+  S.llUsed = { fifty:null, phone:null, notes:null };
+  save(); render(); toast("Comodines restaurados");
+});
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key;
+  // a focused presenter/modal button handles Enter and Space by itself
+  if ((k === "Enter" || k === " ") && e.target && e.target.closest &&
+      e.target.closest("#presenter,.modal")) return;
+  const up = k.length === 1 ? k.toUpperCase() : k;
+
+  if (k === "Escape"){
+    if (anyModalOpen()){ stopTimer(); closeModal(el.modalPhone); closeModal(el.modalTimer); render(); }
+    else togglePresenter(false);
+    e.preventDefault();
+    return;
+  }
+  if (up === "P"){ togglePresenter(); e.preventDefault(); return; }
+  if (up === "M"){ toggleSound(); e.preventDefault(); return; }
+  if (up === "F"){ toggleFullscreen(); e.preventDefault(); return; }
+
+  if (anyModalOpen()) return;
+
+  if (S.screen === "start"){
+    if (k === "Enter" || k === " "){ startGame(); e.preventDefault(); }
+    return;
+  }
+  if (S.screen === "end"){
+    if (k === "Enter"){ resetGame(); startGame(); e.preventDefault(); }
+    if (k === "ArrowLeft"){ S.screen = "quiz"; save(); render(); e.preventDefault(); }
+    return;
+  }
+
+  if (LETTERS.indexOf(up) !== -1){ select(up); e.preventDefault(); return; }
+  if (k === "Enter"){
+    isRevealed(S.i) ? nextQuestion() : confirmAnswer();
+    e.preventDefault(); return;
+  }
+  if (k === "ArrowRight"){ nextQuestion(); e.preventDefault(); return; }
+  if (k === "ArrowLeft"){ prevQuestion(); e.preventDefault(); return; }
+  if (k === "1"){ useFifty(); e.preventDefault(); return; }
+  if (k === "2"){ usePhone(); e.preventDefault(); return; }
+  if (k === "3"){ useNotes(); e.preventDefault(); return; }
+});
+
+// a mouse click leaves focus on the button, which would make Enter fire it again —
+// drop focus after pointer clicks only (keyboard activations report detail === 0)
+document.addEventListener("click", e => {
+  const b = e.target && e.target.closest ? e.target.closest("button") : null;
+  if (b && e.detail > 0) b.blur();
+});
+
+window.addEventListener("beforeunload", save);
+
+/* ---------------- 12. BOOT ---------------- */
+load();
+render();
+if (S.screen === "end") renderEnd();
+</script>
+</body>
+</html>
