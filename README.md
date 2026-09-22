@@ -1,7 +1,11 @@
 # 🏆 Musculoskeletal Challenge
 
-Concurso educativo tipo *game show* sobre **anatomía musculoesquelética**: 20 preguntas tipo test,
-3 comodines, modo presentador y estética premium para proyectar en clase (16:9).
+Concurso educativo sobre **anatomía musculoesquelética**: 20 preguntas tipo test, 3 comodines,
+modo presentador e interfaz limpia y cercana para proyectar en clase (16:9).
+
+La interfaz sigue las **Human Interface Guidelines de Apple**: colores del sistema, tipografía SF,
+tarjetas redondeadas, materiales translúcidos (Liquid Glass solo en la barra de controles),
+movimiento breve y preciso, y áreas táctiles de 44 pt como mínimo.
 
 Todo está en **un único archivo autocontenido** (`index.html`): sin instalación, sin dependencias,
 sin archivos externos. Los sonidos se generan con la Web Audio API, así que nada puede "dejar de funcionar".
@@ -66,6 +70,11 @@ Los temporizadores tienen cuenta atrás gigante, aro de progreso, aviso visual y
 | `M` | Silenciar o activar el sonido |
 | `F` | Pantalla completa |
 
+## 🌗 Aspecto claro y oscuro
+
+La app arranca con el aspecto del sistema y el botón ☀️/🌙 lo cambia a mano (se recuerda).
+El claro va mejor con proyector y luz encendida; el oscuro, con la clase a oscuras.
+
 ---
 
 ## 🎬 Modo presentador (`P` o el botón 🎬)
@@ -90,7 +99,8 @@ Para empezar de cero: *Reiniciar concurso* en el panel del presentador o *Jugar 
 
 ## ✅ Verificado
 
-Probado automáticamente en Chromium con 98 comprobaciones: las 20 respuestas correctas, el 50/50
+Probado automáticamente en Chromium con 104 comprobaciones: las 20 respuestas correctas, el 50/50
 (nunca borra la correcta, no se puede usar dos veces), los tres comodines de un solo uso, la parada
 correcta de los temporizadores, una partida completa de la pregunta 1 a la 20, el cálculo final,
-el guardado en `localStorage`, los atajos de teclado y el reinicio — sin errores en consola.
+el guardado en `localStorage`, los atajos de teclado, el cambio de aspecto claro/oscuro, la ausencia
+de controles solapados en la barra superior y el reinicio — sin errores en consola.
