@@ -530,6 +530,13 @@ body.on-quiz .corner-tools{display:none;}
     <symbol id="ic-mute" viewBox="0 0 24 24">
       <path d="M4 9.5h3.2L12 5.5v13L7.2 14.5H4z"/><path d="M16.5 9.5 21 14M21 9.5 16.5 14"/>
     </symbol>
+    <symbol id="ic-music" viewBox="0 0 24 24">
+      <path d="M9 18V5.5l10-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>
+    </symbol>
+    <symbol id="ic-music-off" viewBox="0 0 24 24">
+      <path d="M9 13.5V5.5l10-2V11"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>
+      <path d="M3.5 3.5 20.5 20.5"/>
+    </symbol>
     <symbol id="ic-sun" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/>
     </symbol>
@@ -589,7 +596,7 @@ body.on-quiz .corner-tools{display:none;}
     </div>
 
     <p class="hint"><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> responder · <kbd>↵</kbd> confirmar ·
-      <kbd>←</kbd><kbd>→</kbd> navegar · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> comodines · <kbd>P</kbd> presentador</p>
+      <kbd>←</kbd><kbd>→</kbd> navegar · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> comodines · <kbd>P</kbd> presentador · <kbd>N</kbd> música</p>
   </section>
 
   <!-- ============ CONCURSO ============ -->
@@ -610,6 +617,8 @@ body.on-quiz .corner-tools{display:none;}
       <div class="tools">
         <button class="tool" id="btn-sound" title="Sonido (M)">
           <svg class="ic i-on" viewBox="0 0 24 24"><use href="#ic-sound"/></svg><svg class="ic i-off" viewBox="0 0 24 24"><use href="#ic-mute"/></svg></button>
+        <button class="tool" id="btn-music" title="Música de fondo (N)">
+          <svg class="ic i-on" viewBox="0 0 24 24"><use href="#ic-music"/></svg><svg class="ic i-off" viewBox="0 0 24 24"><use href="#ic-music-off"/></svg></button>
         <button class="tool" id="btn-theme" title="Aspecto claro u oscuro">
           <svg class="ic i-on" viewBox="0 0 24 24"><use href="#ic-sun"/></svg><svg class="ic i-off" viewBox="0 0 24 24"><use href="#ic-moon"/></svg></button>
         <button class="tool" id="btn-full" title="Pantalla completa (F)"><svg class="ic" viewBox="0 0 24 24"><use href="#ic-expand"/></svg></button>
@@ -663,6 +672,8 @@ body.on-quiz .corner-tools{display:none;}
 <div class="corner-tools">
   <button class="tool glass" id="btn-sound-0" title="Sonido (M)">
     <svg class="ic i-on" viewBox="0 0 24 24"><use href="#ic-sound"/></svg><svg class="ic i-off" viewBox="0 0 24 24"><use href="#ic-mute"/></svg></button>
+  <button class="tool glass" id="btn-music-0" title="Música de fondo (N)">
+    <svg class="ic i-on" viewBox="0 0 24 24"><use href="#ic-music"/></svg><svg class="ic i-off" viewBox="0 0 24 24"><use href="#ic-music-off"/></svg></button>
   <button class="tool glass" id="btn-theme-0" title="Aspecto claro u oscuro">
     <svg class="ic i-on" viewBox="0 0 24 24"><use href="#ic-sun"/></svg><svg class="ic i-off" viewBox="0 0 24 24"><use href="#ic-moon"/></svg></button>
   <button class="tool glass" id="btn-full-0" title="Pantalla completa (F)"><svg class="ic" viewBox="0 0 24 24"><use href="#ic-expand"/></svg></button>
@@ -764,7 +775,8 @@ body.on-quiz .corner-tools{display:none;}
         <kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> responder<br/>
         <kbd>↵</kbd> confirmar · <kbd>←</kbd><kbd>→</kbd> navegar<br/>
         <kbd>1</kbd> 50/50 · <kbd>2</kbd> teléfono · <kbd>3</kbd> apuntes<br/>
-        <kbd>P</kbd> panel · <kbd>esc</kbd> cerrar · <kbd>M</kbd> sonido · <kbd>F</kbd> pantalla completa
+        <kbd>P</kbd> panel · <kbd>esc</kbd> cerrar<br/>
+        <kbd>M</kbd> sonido · <kbd>N</kbd> música · <kbd>F</kbd> pantalla completa
       </div></div>
     </div>
 
@@ -906,7 +918,7 @@ const Snd = {
     if (!AC) return;
     this.ctx = new AC();
     this.master = this.ctx.createGain();
-    this.master.gain.value = 0.34;
+    this.master.gain.value = 0.6;
     this.master.connect(this.ctx.destination);
   },
   ready(){
@@ -949,6 +961,178 @@ const Snd = {
   victory(){
     [523.25,659.25,783.99,1046.5,1318.51,1046.5,1318.51,1567.98]
       .forEach((f,k)=> this.note(f,{dur:.4,vol:.16,at:k*0.13}));
+    [523.25,659.25,783.99].forEach(f => this.note(f,{dur:1.6,vol:.1,at:1.05}));
+  },
+
+  /* ---- ruido blanco reutilizable, para escobillas y golpes ---- */
+  noiseBuffer(){
+    if (this._nb) return this._nb;
+    const ctx = this.ctx, len = Math.floor(ctx.sampleRate * 0.6);
+    const b = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    this._nb = b;
+    return b;
+  },
+  swish(o){
+    o = o || {};
+    if (!this.ready()) return;
+    const ctx = this.ctx, t0 = ctx.currentTime + (o.at || 0), dur = o.dur || .25;
+    const src = ctx.createBufferSource(); src.buffer = this.noiseBuffer();
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = o.q || 1.2;
+    f.frequency.setValueAtTime(o.from || 900, t0);
+    f.frequency.exponentialRampToValueAtTime(Math.max(80, o.to || 4000), t0 + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(o.vol == null ? .16 : o.vol, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(f); f.connect(g); g.connect(this.master);
+    src.start(t0); src.stop(t0 + dur + 0.05);
+  },
+
+  /* ---- efectos de los comodines ---- */
+  fxFifty(){                                   // dos tijeretazos y una respuesta que se cae
+    this.swish({ from:2600, to:700, dur:.12, vol:.13 });
+    this.swish({ from:2600, to:600, dur:.12, vol:.13, at:.14 });
+    this.note(880,{type:"square",dur:.08,vol:.1});
+    this.note(740,{type:"square",dur:.08,vol:.1,at:.14});
+    this.note(392,{dur:.3,vol:.13,at:.3,to:196});
+  },
+  fxPhone(){                                   // dos toques de llamada
+    [0,.5].forEach(at => {
+      this.note(440,{type:"triangle",dur:.34,vol:.13,at:at});
+      this.note(480,{type:"triangle",dur:.34,vol:.11,at:at});
+    });
+  },
+  fxNotes(){                                   // pasar la hoja y campanita
+    this.swish({ from:400, to:2600, dur:.22, vol:.12, q:.7 });
+    this.note(1046.5,{dur:.35,vol:.12,at:.16});
+    this.note(1567.98,{dur:.5,vol:.08,at:.24});
+  },
+  showOpen(){                                  // sintonía corta de apertura
+    [392,523.25,659.25,783.99].forEach((f,k)=> this.note(f,{type:"triangle",dur:.34,vol:.16,at:k*0.11}));
+    this.note(1046.5,{dur:.8,vol:.12,at:.46});
+    this.swish({ from:300, to:5000, dur:.5, vol:.09, q:.6 });
+  }
+};
+
+/* ---------------- 2b. MÚSICA DE CONCURSO (sintetizada en vivo) ----------------
+   Bucle propio de 4 compases que sube de intensidad con el nivel de dificultad.
+   No usa archivos ni melodías de ningún programa real.                         */
+const PROG = [
+  { root:110.00, notes:[220.00, 261.63, 329.63] },   // La menor
+  { root: 87.31, notes:[174.61, 220.00, 261.63] },   // Fa
+  { root:130.81, notes:[261.63, 329.63, 392.00] },   // Do
+  { root: 98.00, notes:[196.00, 246.94, 293.66] }    // Sol
+];
+const TIER_MUSIC = {
+  easy:    { bpm: 92, vol:.26, kick:false, arp:false },
+  medium:  { bpm:100, vol:.30, kick:true,  arp:false },
+  hard:    { bpm:108, vol:.35, kick:true,  arp:true  },
+  extreme: { bpm:116, vol:.40, kick:true,  arp:true  }
+};
+
+const Music = {
+  bus:null, timer:null, playing:false, step:0, nextAt:0, tier:"easy", duckLevel:1,
+
+  ensure(){
+    Snd.init();
+    if (!Snd.ctx) return false;
+    if (!this.bus){
+      this.bus = Snd.ctx.createGain();
+      this.bus.gain.value = 0;
+      this.bus.connect(Snd.master);
+    }
+    return true;
+  },
+  level(){
+    if (!this.playing || S.muted || !S.music) return 0;
+    return (TIER_MUSIC[this.tier] || TIER_MUSIC.easy).vol * this.duckLevel;
+  },
+  applyLevel(){
+    if (!this.bus) return;
+    this.bus.gain.setTargetAtTime(this.level(), Snd.ctx.currentTime, .18);
+  },
+  start(){
+    if (!S.music || S.muted || S.screen !== "quiz") return;
+    if (!this.ensure()) return;
+    if (Snd.ctx.state === "suspended") Snd.ctx.resume();
+    if (this.playing) { this.applyLevel(); return; }
+    this.playing = true;
+    this.step = 0;
+    this.nextAt = Snd.ctx.currentTime + 0.12;
+    this.applyLevel();
+    this.timer = setInterval(()=> this.schedule(), 40);
+  },
+  stop(){
+    this.playing = false;
+    if (this.timer){ clearInterval(this.timer); this.timer = null; }
+    this.applyLevel();
+  },
+  setTier(k){ if (k !== this.tier){ this.tier = k; this.applyLevel(); } },
+  duck(v){ this.duckLevel = v; this.applyLevel(); },
+  refresh(){
+    // el volumen baja solo cuando hay algo más importante que oír
+    const v = anyModalOpen() ? .2 : (phase === "suspense" ? .3 : 1);
+    if (v !== this.duckLevel) this.duck(v); else this.applyLevel();
+  },
+
+  schedule(){
+    if (!this.playing || !Snd.ctx) return;
+    const cfg = TIER_MUSIC[this.tier] || TIER_MUSIC.easy;
+    const stepDur = 60 / cfg.bpm / 2;                    // corcheas
+    while (this.nextAt < Snd.ctx.currentTime + 0.25){
+      this.playStep(this.step, this.nextAt, cfg);
+      this.nextAt += stepDur;
+      this.step = (this.step + 1) % 32;
+    }
+  },
+  playStep(step, t, cfg){
+    const bar = Math.floor(step / 8), inBar = step % 8, ch = PROG[bar];
+    const barDur = (60 / cfg.bpm / 2) * 8;
+
+    if (inBar === 0 || inBar === 3 || inBar === 6)                       // bajo
+      this.voice(ch.root, t, { type:"triangle", dur:.4, vol:.5, cut:700, sus:true });
+    if (inBar === 0)                                                     // colchón de acordes
+      ch.notes.forEach(f => this.voice(f, t, { type:"sawtooth", dur:barDur * .96, vol:.075, cut:1500, sus:true }));
+    if (cfg.kick && (inBar === 0 || inBar === 4)) this.kick(t);
+    this.hat(t, inBar % 2 ? .085 : .045);
+    if (cfg.arp && inBar % 2 === 1)
+      this.voice(ch.notes[(step >> 1) % 3] * 2, t, { type:"square", dur:.14, vol:.045, cut:2600 });
+  },
+  voice(freq, t, o){
+    const ctx = Snd.ctx;
+    const osc = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+    osc.type = o.type || "triangle";
+    osc.frequency.setValueAtTime(freq, t);
+    f.type = "lowpass"; f.frequency.setValueAtTime(o.cut || 1200, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(o.vol, t + 0.02);
+    if (o.sus) g.gain.setValueAtTime(o.vol, t + o.dur * 0.55);   // mantiene antes de apagarse
+    g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
+    osc.connect(f); f.connect(g); g.connect(this.bus);
+    osc.start(t); osc.stop(t + o.dur + 0.05);
+  },
+  kick(t){
+    const ctx = Snd.ctx;
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(135, t);
+    osc.frequency.exponentialRampToValueAtTime(45, t + 0.11);
+    g.gain.setValueAtTime(.6, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    osc.connect(g); g.connect(this.bus);
+    osc.start(t); osc.stop(t + 0.2);
+  },
+  hat(t, vol){
+    const ctx = Snd.ctx;
+    const src = ctx.createBufferSource(); src.buffer = Snd.noiseBuffer();
+    const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 7500;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+    src.connect(f); f.connect(g); g.connect(this.bus);
+    src.start(t); src.stop(t + 0.06);
   }
 };
 
@@ -963,6 +1147,7 @@ const freshState = () => ({
   ll:{ fifty:false, phone:false, notes:false },
   llUsed:{ fifty:null, phone:null, notes:null },
   muted:false,
+  music:true,                        // música de fondo
   theme:null                         // null = seguir al sistema
 });
 let S = freshState();
@@ -987,6 +1172,7 @@ function load(){
     S.i = Math.min(19, Math.max(0, d.i | 0));
     if (["start","quiz","end"].indexOf(S.screen) === -1) S.screen = "start";
     if (S.theme !== "light" && S.theme !== "dark") S.theme = null;
+    S.music = d.music !== false;
   }catch(e){ S = freshState(); }
 }
 
@@ -1004,6 +1190,7 @@ const el = {
   llFifty:$("#ll-fifty"), llPhone:$("#ll-phone"), llNotes:$("#ll-notes"),
   soundBtns:[$("#btn-sound"), $("#btn-sound-0")],
   themeBtns:[$("#btn-theme"), $("#btn-theme-0")],
+  musicBtns:[$("#btn-music"), $("#btn-music-0")],
   modalPhone:$("#modal-phone"), modalTimer:$("#modal-timer"),
   timerTitle:$("#timer-title"), timerSub:$("#timer-sub"),
   timerNum:$("#timer-num"), timerMsg:$("#timer-msg"),
@@ -1030,6 +1217,8 @@ function render(){
   if (S.screen === "end")  renderEnd();
   renderPresenter(t);
   updateSoundIcons();
+  Music.setTier(t.key);
+  Music.refresh();
 }
 
 function renderQuiz(t){
@@ -1124,8 +1313,10 @@ function renderEnd(){
 /* ---------------- 6. FLUJO DEL CONCURSO ---------------- */
 function startGame(){
   Snd.init();
+  Snd.showOpen();                       // sintonía de apertura
   S.screen = "quiz";
   save(); render();
+  setTimeout(()=> Music.start(), 900);  // la música entra tras la sintonía
 }
 
 function select(k){
@@ -1206,18 +1397,20 @@ function finish(){
   if (suspenseTimer){ clearTimeout(suspenseTimer); suspenseTimer = null; }
   phase = "idle";
   S.screen = "end";
+  Music.stop();
   save(); render();
   Snd.victory();
   confettiBurst();
 }
 
 function resetGame(){
+  Music.stop();
   stopTimer();
   closeModal(el.modalTimer); closeModal(el.modalPhone);
   if (suspenseTimer){ clearTimeout(suspenseTimer); suspenseTimer = null; }
-  const keep = { muted:S.muted, theme:S.theme };
+  const keep = { muted:S.muted, theme:S.theme, music:S.music };
   S = freshState();
-  S.muted = keep.muted; S.theme = keep.theme;
+  S.muted = keep.muted; S.theme = keep.theme; S.music = keep.music;
   phase = "idle";
   el.confetti.innerHTML = "";
   save(); render();
@@ -1239,7 +1432,7 @@ function useFifty(){
   if (removed.indexOf(S.sel[i]) !== -1) S.sel[i] = null;
   S.ll.fifty = true;
   S.llUsed.fifty = "Pregunta " + (i + 1);
-  Snd.note(659.25,{dur:.1,vol:.15}); Snd.note(392,{dur:.2,vol:.13,at:.08});
+  Snd.fxFifty();
   el.llFifty.classList.add("spend");
   setTimeout(()=> el.llFifty.classList.remove("spend"), 520);
   save(); render();
@@ -1255,6 +1448,7 @@ function spendPhone(mode){
   if (S.ll.phone) return;
   S.ll.phone = true;
   S.llUsed.phone = mode === "internet" ? "Internet" : "Llamada";
+  Snd.fxPhone();
   closeModal(el.modalPhone);
   save(); render();
   if (mode === "internet")
@@ -1268,6 +1462,7 @@ function useNotes(){
   if (S.screen !== "quiz") return;
   S.ll.notes = true;
   S.llUsed.notes = "Pregunta " + (S.i + 1);
+  Snd.fxNotes();
   save(); render();
   startTimer({ kind:"notes", total:20, title:"Apuntes",
                sub:"Tienes 20 segundos para consultar tus apuntes", end:"Cierra los apuntes" });
@@ -1343,8 +1538,8 @@ function restartTimer(){
 }
 
 /* ---------------- 9. MODALES Y EFECTOS ---------------- */
-function openModal(m){ m.classList.add("open"); }
-function closeModal(m){ m.classList.remove("open"); }
+function openModal(m){ m.classList.add("open"); Music.refresh(); }
+function closeModal(m){ m.classList.remove("open"); Music.refresh(); }
 function anyModalOpen(){ return el.modalPhone.classList.contains("open") || el.modalTimer.classList.contains("open"); }
 
 function flash(ok){
@@ -1383,10 +1578,20 @@ function toggleSound(){
   S.muted = !S.muted;
   if (!S.muted){ Snd.init(); Snd.select(); }
   save(); updateSoundIcons();
+  if (S.muted) Music.stop();
+  else if (S.screen === "quiz") Music.start();
   toast(S.muted ? "Sonido silenciado" : "Sonido activado");
+}
+function toggleMusic(){
+  S.music = !S.music;
+  save(); updateSoundIcons();
+  if (S.music && S.screen === "quiz" && !S.muted) Music.start(); else Music.stop();
+  toast(S.music ? "Música activada" : "Música desactivada");
 }
 function updateSoundIcons(){
   el.soundBtns.forEach(b => { if (b){ b.classList.toggle("is-off", S.muted); b.classList.toggle("on", !S.muted); } });
+  el.musicBtns.forEach(b => { if (b){ const on = S.music && !S.muted;
+    b.classList.toggle("is-off", !on); b.classList.toggle("on", on); } });
 }
 
 function systemPrefersDark(){
@@ -1486,6 +1691,7 @@ $("#timer-restart").addEventListener("click", restartTimer);
 
 el.soundBtns.forEach(b => { if (b) b.addEventListener("click", toggleSound); });
 el.themeBtns.forEach(b => { if (b) b.addEventListener("click", toggleTheme); });
+el.musicBtns.forEach(b => { if (b) b.addEventListener("click", toggleMusic); });
 $("#btn-full").addEventListener("click", toggleFullscreen);
 $("#btn-full-0").addEventListener("click", toggleFullscreen);
 $("#btn-pres").addEventListener("click", ()=> togglePresenter());
@@ -1526,6 +1732,7 @@ document.addEventListener("keydown", e => {
   }
   if (up === "P"){ togglePresenter(); e.preventDefault(); return; }
   if (up === "M"){ toggleSound(); e.preventDefault(); return; }
+  if (up === "N"){ toggleMusic(); e.preventDefault(); return; }
   if (up === "F"){ toggleFullscreen(); e.preventDefault(); return; }
 
   if (anyModalOpen()) return;

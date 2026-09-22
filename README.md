@@ -67,8 +67,30 @@ Los temporizadores tienen cuenta atrás gigante, aro de progreso, aviso visual y
 | `1` `2` `3` | 50/50 · Teléfono · Apuntes |
 | `P` | Abrir/cerrar el panel del presentador |
 | `Esc` | Cerrar modales / panel |
-| `M` | Silenciar o activar el sonido |
+| `M` | Silenciar todo (música y efectos) |
+| `N` | Música de fondo sí o no |
 | `F` | Pantalla completa |
+
+---
+
+## 🎵 Música y efectos
+
+Todo el audio se **genera en el navegador** con la Web Audio API: no hay ni un solo archivo de sonido,
+así que no puede fallar por una descarga, y la música es original — no reproduce ninguna sintonía
+de ningún programa real.
+
+- **Sintonía de apertura** al pulsar *Comenzar concurso*.
+- **Música de concurso** en bucle de cuatro compases (bajo, colchón de acordes, bombo y charles)
+  que **sube de intensidad con la dificultad**: 92 pulsos por minuto y sin batería en las fáciles,
+  116 con arpegio en las extremas.
+- El volumen **baja solo** durante los 1,5 s de tensión previos a la respuesta y mientras corre un
+  temporizador, para que se oiga bien la cuenta atrás.
+- **Efectos propios** para: elegir respuesta, confirmar, acierto (fanfarria), fallo, tic-tac,
+  últimos 5 segundos, fin de tiempo, llegada a la pregunta 20 y victoria final.
+- **Cada comodín tiene su efecto**: tijeretazos en el 50/50, dos toques de llamada en el teléfono
+  y pasar de hoja con campanita en los apuntes.
+
+Botón 🔊 para silenciarlo todo y botón 🎵 para quitar solo la música dejando los efectos.
 
 ## 🌗 Aspecto claro y oscuro
 
@@ -99,8 +121,14 @@ Para empezar de cero: *Reiniciar concurso* en el panel del presentador o *Jugar 
 
 ## ✅ Verificado
 
-Probado automáticamente en Chromium con 104 comprobaciones: las 20 respuestas correctas, el 50/50
+Probado automáticamente en Chromium con 128 comprobaciones: las 20 respuestas correctas, el 50/50
 (nunca borra la correcta, no se puede usar dos veces), los tres comodines de un solo uso, la parada
 correcta de los temporizadores, una partida completa de la pregunta 1 a la 20, el cálculo final,
 el guardado en `localStorage`, los atajos de teclado, el cambio de aspecto claro/oscuro, la ausencia
 de controles solapados en la barra superior y el reinicio — sin errores en consola.
+
+El audio se comprueba aparte (24 verificaciones): que la música arranca con el concurso, que el
+secuenciador avanza, que sigue el nivel de dificultad, que baja de volumen en la tensión y en los
+temporizadores, que los dos interruptores y la tecla `N` funcionan y se recuerdan, y que para al
+llegar al resultado. Además se renderiza el audio sin reproducirlo para medir que ni la música ni
+los efectos saturan.
